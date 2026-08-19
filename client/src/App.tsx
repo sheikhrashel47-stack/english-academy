@@ -14,6 +14,7 @@ import { initializeLearningApp } from "@/app/bootstrap/initializeLearningApp";
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const LessonPage = lazy(() => import("@/pages/LessonPage"));
 const VocabularyPage = lazy(() => import("@/pages/VocabularyPage"));
+const VocabularyCategoryPage = lazy(() => import("@/pages/VocabularyCategoryPage"));
 const ProgressPage = lazy(() => import("@/pages/ProgressPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const CoursePage = lazy(() => import("@/pages/CoursePage"));
@@ -64,6 +65,8 @@ function Router() {
         <Route path="/learn/chapter/:chapterId" component={ChapterPage} />
         <Route path="/learn/lesson/:lessonId" component={LessonPage} />
         <Route path="/vocabulary/flashcards" component={FlashcardsPage} />
+        <Route path="/vocabulary/categories/:slug" component={VocabularyCategoryPage} />
+        <Route path="/vocabulary/categories" component={VocabularyCategoryPage} />
         <Route path="/vocabulary/:word" component={VocabularyDetailPage} />
         <Route path="/vocabulary" component={VocabularyPage} />
         <Route path="/library/saved" component={LibraryPage} />

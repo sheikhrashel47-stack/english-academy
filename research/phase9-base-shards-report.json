@@ -1,0 +1,12 @@
+{
+  "output": "/home/ubuntu/english-academy/client/public/data/phase9",
+  "categoryShards": 200,
+  "categories": 200,
+  "vocabulary": 50000,
+  "uniqueLemmas": 50000,
+  "sentences": 0,
+  "sentencesPerWord": 0,
+  "withBanglaMeaning": 20397,
+  "withSynonyms": 30083,
+  "withAntonyms": 3520
+}

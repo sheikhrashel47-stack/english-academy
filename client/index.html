@@ -13,6 +13,20 @@
     <title>English Academy — তোমার connected learning workspace</title>
   </head>
   <body>
+    <script>
+      (function restoreGitHubPagesRoute() {
+        try {
+          const key = "english-academy-spa-redirect";
+          const redirect = sessionStorage.getItem(key);
+          if (!redirect) return;
+          sessionStorage.removeItem(key);
+          const url = new URL(redirect, window.location.origin);
+          window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+        } catch {
+          // A blocked sessionStorage should never prevent the app from booting.
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script type="module">

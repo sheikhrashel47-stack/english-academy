@@ -111,3 +111,10 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 .project-config.json
+
+# Phase 9 local staging and raw lexical downloads
+research/vendor/
+research/phase9-base-manifest.json
+research/phase9-final-manifest.json
+research/phase9-enrichment-batches/
+research/phase9-enrichment.log

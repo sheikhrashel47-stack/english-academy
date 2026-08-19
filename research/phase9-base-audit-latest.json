@@ -1,0 +1,18 @@
+{
+  "contentVersion": "phase9-base-wordnet-50000-v1",
+  "status": "base-only-not-final",
+  "words": 50000,
+  "uniqueNormalizedLemmas": 50000,
+  "duplicateNormalizedLemmas": 0,
+  "categories": 200,
+  "categoryCountDistribution": {
+    "250": 200
+  },
+  "categoriesAtTarget": 200,
+  "withSynonyms": 30083,
+  "withAntonyms": 3520,
+  "withBanglaMeaning": 20397,
+  "withEnglishExample": 20397,
+  "sourceRightsFieldsValid": true,
+  "acceptedBaseGate": true
+}
