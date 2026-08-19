@@ -158,7 +158,7 @@
 - [x] Lesson, practice, vocabulary review, skill activity, assessment and certificate completion থেকে meaningful learning events record ও duplicate-safe XP integration করা।
 - [x] Offline persistence, data export/import, Bangla/mixed/immersion copy, privacy, accessibility, haptic/sound/animation preference ও mobile UX যাচাই করা।
 - [x] Phase 7 unit tests, production build, scope limitations and release documentation সম্পন্ন করা।
-- [ ] Authenticated GitHub Pages publication চালিয়ে Phase 7 production route যাচাই করা।
+- [x] Authenticated GitHub Pages publication চালিয়ে Phase 7 production route যাচাই করা।
 
 ## Phase 9 vocabulary category mini-course experience — complete separately after Phase 8
 

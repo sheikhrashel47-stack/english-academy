@@ -76,6 +76,10 @@ The following Phase 7 checks passed on **19 August 2026**. The production bundle
 
 GitHub Pages republication remains an operational deployment step. It requires an authenticated GitHub session and is tracked separately from the completed application validation.
 
+## Publication Record
+
+The Phase 7 corrective release was published successfully on **19 August 2026** through GitHub Pages Actions run [#32245479325](https://github.com/sheikhrashel47-stack/english-academy/actions/runs/32245479325). The public application is available at [sheikhrashel47-stack.github.io/english-academy](https://sheikhrashel47-stack.github.io/english-academy/). The published [`/growth`](https://sheikhrashel47-stack.github.io/english-academy/growth) deep link was opened in a fresh browser session and rendered the complete CEFR-led personal learning ledger and rule-based daily plan.
+
 ## Future Considerations
 
 Future phases may add new learning actions that emit the same carefully bounded event types, but they must preserve deterministic calculation, learner control and local-first storage. Any future export, backup, identity, teacher-view, analytics or synchronization capability requires a separate privacy review, explicit user control and its own release documentation.
