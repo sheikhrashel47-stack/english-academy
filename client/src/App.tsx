@@ -20,6 +20,7 @@ const PracticePage = lazy(() => import("@/pages/PracticePage"));
 const UnitPage = lazy(() => import("@/pages/UnitPage"));
 const GrammarPage = lazy(() => import("@/pages/GrammarPage"));
 const MistakeBankPage = lazy(() => import("@/pages/MistakeBankPage"));
+const ToolsPage = lazy(() => import("@/pages/ToolsPage"));
 
 function Router() {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -38,6 +39,7 @@ function Router() {
         <Route path="/practice" component={PracticePage} />
         <Route path="/mistakes" component={MistakeBankPage} />
         <Route path="/progress" component={ProgressPage} />
+        <Route path="/tools" component={ToolsPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

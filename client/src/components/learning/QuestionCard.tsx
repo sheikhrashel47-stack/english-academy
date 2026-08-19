@@ -1,6 +1,6 @@
 /**
- * Design reminder — “ভাষার মানচিত্র”: one question at a time, clear feedback in a margin note,
- * and terracotta only for the learner’s active decision.
+ * Design reminder — “Emerald Study House”: one question at a time, calm academic
+ * feedback and no decorative game or travel language.
  */
 import { CheckCircle2, Circle, RotateCcw, Sparkles, XCircle } from "lucide-react";
 import { useState } from "react";
@@ -36,7 +36,7 @@ export function QuestionCard({ question, onAnswered }: { question: Question; onA
 
   return (
     <section className="question-card" aria-labelledby={`question-${question.id}`}>
-      <div className="question-meta"><span>Check point</span><span>{question.skill} · Level {question.difficulty}</span></div>
+      <div className="question-meta"><span>Practice question</span><span>{question.skill} · Level {question.difficulty}</span></div>
       <h3 id={`question-${question.id}`}>{question.prompt}</h3>
       {question.banglaPrompt && <p className="question-translation">{question.banglaPrompt}</p>}
 
@@ -53,7 +53,7 @@ export function QuestionCard({ question, onAnswered }: { question: Question; onA
       </div>}
 
       {(question.type === "fill-blank" || question.type === "vocabulary-recall") && <label className="answer-text-field">
-        <span>{question.type === "vocabulary-recall" ? `Word atlas · ${question.word}` : "তোমার উত্তর"}</span>
+        <span>{question.type === "vocabulary-recall" ? `Vocabulary review · ${question.word}` : "তোমার উত্তর"}</span>
         <input value={textAnswer} disabled={Boolean(result)} placeholder={question.type === "vocabulary-recall" ? "বাংলা অর্থ লিখো" : question.placeholder ?? "সঠিক শব্দটি লেখো"} onChange={(event) => setTextAnswer(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void submit(); }} />
       </label>}
 

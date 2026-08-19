@@ -13,9 +13,9 @@
 
 ## GitHub Pages publication
 
-- [ ] Existing GitHub Pages deployment pattern ও English Academy repository settings যাচাই করা।
-- [ ] English Academy-এর GitHub Pages publishing source সক্রিয় করে Actions deployment চালানো।
-- [ ] Published GitHub Pages URL খুলে production rendering নিশ্চিত করা।
+- [x] Existing GitHub Pages deployment pattern ও English Academy repository settings যাচাই করা।
+- [x] English Academy-এর GitHub Pages publishing source সক্রিয় করে Actions deployment চালানো।
+- [x] Published GitHub Pages URL খুলে production rendering নিশ্চিত করা।
 
 ## 404 diagnosis
 
@@ -25,6 +25,16 @@
 
 ## Public GitHub Pages launch
 
-- [ ] Existing `english-academy` repository-র visibility public করা।
-- [ ] GitHub Pages source হিসেবে Actions deployment সক্রিয় করা।
-- [ ] Published GitHub Pages URL খুলে application rendering ও route fallback যাচাই করা।
+- [x] Existing `english-academy` repository-র visibility public করা।
+- [x] GitHub Pages source হিসেবে Actions deployment সক্রিয় করা।
+- [x] Published GitHub Pages URL খুলে application rendering ও route fallback যাচাই করা।
+
+## Master product design and initial UI shell
+
+- [x] বর্তমান IA, route map, design direction ও reusable components-এর gap assessment সম্পন্ন করা।
+- [x] Master product design specification, screen inventory, UX flows ও tool/component inventories নথিভুক্ত করা।
+- [x] Deep-emerald premium academic token system, light/dark/focus themes ও Bangla–English typography system স্থাপন করা।
+- [x] Desktop sidebar, five-item mobile bottom navigation এবং grouped primary destinations পুনর্গঠন করা।
+- [x] Dashboard, learning map, course, lesson, practice, vocabulary, progress, tools ও settings-এর coherent initial UI shell implement করা।
+- [x] Responsive, keyboard, reduced-motion, empty/loading/error-state এবং production build validation সম্পন্ন করা।
+- [ ] নতুন design-system UI shell-এর checkpoint ও GitHub Pages deployment যাচাই করা।

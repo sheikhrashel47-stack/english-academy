@@ -1,6 +1,6 @@
 /**
- * Design reminder — “ভাষার মানচিত্র”: compass navigation, warm parchment surfaces,
- * ink typography, and restrained terracotta position markers.
+ * Design reminder — “Emerald Study House”: navigation is grouped, calm and
+ * purposeful. The current learning task is always more prominent than tools.
  */
 import { Link, useLocation } from "wouter";
 import {
@@ -9,15 +9,14 @@ import {
   ChartNoAxesCombined,
   ChevronRight,
   CircleHelp,
-  GraduationCap,
   LibraryBig,
   ListChecks,
   RotateCcw,
-  Map,
   Menu,
   Settings,
   Sparkles,
-  Target,
+  Wrench,
+  House,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,17 +29,42 @@ type AppShellProps = {
   eyebrow?: string;
 };
 
-const navigation = [
-  { href: "/dashboard", label: "আমার পথ", icon: Map },
-  { href: "/course/course-english-foundations", label: "পাঠ্যপথ", icon: LibraryBig },
-  { href: "/practice", label: "অনুশীলন", icon: ListChecks },
-  { href: "/vocabulary", label: "শব্দভাণ্ডার", icon: BookOpen },
-  { href: "/grammar", label: "Grammar", icon: BookMarked },
-  { href: "/mistakes", label: "Mistake Bank", icon: RotateCcw },
-  { href: "/progress", label: "অগ্রগতি", icon: ChartNoAxesCombined },
+type NavigationItem = { href: string; label: string; icon: typeof House };
+type NavigationGroup = { label: string; items: NavigationItem[] };
+
+const navigationGroups: NavigationGroup[] = [
+  { label: "মূল পথ", items: [{ href: "/dashboard", label: "Home", icon: House }] },
+  {
+    label: "শেখা",
+    items: [
+      { href: "/course/course-english-foundations", label: "Learning Map", icon: LibraryBig },
+      { href: "/practice", label: "Practice", icon: ListChecks },
+    ],
+  },
+  {
+    label: "Skills & Review",
+    items: [
+      { href: "/vocabulary", label: "Vocabulary", icon: BookOpen },
+      { href: "/grammar", label: "Grammar", icon: BookMarked },
+      { href: "/mistakes", label: "Mistake Bank", icon: RotateCcw },
+    ],
+  },
+  {
+    label: "অগ্রগতি",
+    items: [
+      { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
+      { href: "/tools", label: "Tools", icon: Wrench },
+    ],
+  },
 ];
 
-const mobileNavigation = [navigation[0], navigation[1], navigation[2], navigation[4], navigation[5]];
+const mobileNavigation: NavigationItem[] = [
+  { href: "/dashboard", label: "Home", icon: House },
+  { href: "/course/course-english-foundations", label: "Learn", icon: LibraryBig },
+  { href: "/practice", label: "Practice", icon: ListChecks },
+  { href: "/tools", label: "AI", icon: Sparkles },
+  { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
+];
 
 export function AppShell({ children, title, eyebrow }: AppShellProps) {
   const [location] = useLocation();
@@ -53,23 +77,27 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
         <span className="brand-type">
           <strong>English</strong>
           <em>Academy</em>
-          <small>Learner’s atlas</small>
+          <small>Study workspace</small>
         </span>
       </Link>
 
-      <div className="sidebar-label">Learning compass</div>
       <nav className="sidebar-nav" aria-label="প্রধান নেভিগেশন">
-        {navigation.map((item) => {
-          const Icon = item.icon;
-          const active = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
-          return (
-            <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={cn("nav-item", active && "nav-item-active")}>
-              <Icon size={18} strokeWidth={active ? 2.2 : 1.8} />
-              <span>{item.label}</span>
-              {active && <ChevronRight className="nav-chevron" size={15} />}
-            </Link>
-          );
-        })}
+        {navigationGroups.map((group) => (
+          <section className="nav-section" key={group.label} aria-label={group.label}>
+            <p className="nav-section-label">{group.label}</p>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className={cn("nav-item", active && "nav-item-active")}>
+                  <Icon size={18} strokeWidth={active ? 2.25 : 1.8} />
+                  <span>{item.label}</span>
+                  {active && <ChevronRight className="nav-chevron" size={15} />}
+                </Link>
+              );
+            })}
+          </section>
+        ))}
       </nav>
 
       <div className="sidebar-footer">
@@ -99,7 +127,7 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
             <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="" />
             <span>EA</span>
           </Link>
-          <div className="page-heading">
+          <div className="page-heading" aria-live="polite">
             {eyebrow && <span className="eyebrow">{eyebrow}</span>}
             {title && <h1>{title}</h1>}
           </div>
@@ -126,9 +154,9 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
 
 export function PhaseZeroNotice() {
   return (
-    <section className="phase-notice" aria-label="Phase 0 সীমা">
-      <div className="phase-notice-icon"><Target size={18} /></div>
-      <p><strong>Phase 0 foundation</strong> — এই prototype-এ structured lesson, প্রশ্ন, অগ্রগতি ও offline storage যাচাই করা যাচ্ছে। সম্পূর্ণ course ও AI tutor ইচ্ছাকৃতভাবে এখনও যুক্ত করা হয়নি।</p>
+    <section className="phase-notice" aria-label="প্রাথমিক সংস্করণের সীমা">
+      <div className="phase-notice-icon"><Sparkles size={18} /></div>
+      <p><strong>Initial learning shell</strong> — এই সংস্করণে structured lesson, practice, progress ও offline storage ব্যবহার করা যায়। AI Coach, exam center ও detailed skill labs পরবর্তী ধাপে যুক্ত হবে।</p>
     </section>
   );
 }
