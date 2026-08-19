@@ -1,12 +1,12 @@
 import { AppError } from "@/core/errors/AppError";
 
 export const DB_NAME = "english-academy";
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export const stores = {
   courses: "courses", levels: "levels", units: "units", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
   grammarTopics: "grammarTopics", progress: "progress", vocabularyProgress: "vocabularyProgress", attempts: "attempts", mistakes: "mistakes",
-  reviewItems: "reviewItems", settings: "settings",
+  reviewItems: "reviewItems", settings: "settings", writingDrafts: "writingDrafts",
 } as const;
 
 export type StoreName = (typeof stores)[keyof typeof stores];
@@ -38,6 +38,7 @@ class EnglishAcademyDb {
     const mistakeStore = create(stores.mistakes); if (!mistakeStore.indexNames.contains("userQuestion")) mistakeStore.createIndex("userQuestion", ["userId", "questionId"], { unique: false });
     const reviewStore = create(stores.reviewItems); if (!reviewStore.indexNames.contains("due")) reviewStore.createIndex("due", "nextReviewAt", { unique: false });
     create(stores.settings);
+    const draftStore = create(stores.writingDrafts); if (!draftStore.indexNames.contains("userPrompt")) draftStore.createIndex("userPrompt", ["userId", "promptId"], { unique: true });
   }
 
   async get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined> { return this.run<T | undefined>(store, "readonly", (objectStore) => objectStore.get(key)); }

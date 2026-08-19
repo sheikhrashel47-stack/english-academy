@@ -9,16 +9,17 @@ import { AppShell, PhaseZeroNotice } from "@/components/app/AppShell";
 type Tool = { title: string; description: string; icon: typeof Sparkles; action: string; href?: string; status?: "available" | "planned" };
 
 const languageTools: Tool[] = [
-  { title: "Vocabulary Atlas", description: "শব্দ খোঁজো, অর্থ দেখো এবং উচ্চারণ শোনো।", icon: BookOpen, action: "Vocabulary খুলুন", href: "/vocabulary", status: "available" },
+  { title: "Vocabulary Library", description: "শব্দ খোঁজো, অর্থ দেখো এবং flashcard review করো।", icon: BookOpen, action: "Vocabulary খুলুন", href: "/vocabulary", status: "available" },
   { title: "Grammar Library", description: "ছোট ধারণা, উদাহরণ ও lesson-linked practice।", icon: BookOpenCheck, action: "Grammar খুলুন", href: "/grammar", status: "available" },
-  { title: "Smart Review", description: "যে শব্দ বা প্রশ্নের review সময় হয়েছে, সেখান থেকে শুরু করো।", icon: RotateCcw, action: "Review শুরু করো", href: "/practice", status: "available" },
+  { title: "Smart Review", description: "যে শব্দ বা প্রশ্নের review সময় হয়েছে, সেখান থেকে শুরু করো।", icon: RotateCcw, action: "Review শুরু করো", href: "/review", status: "available" },
+  { title: "Listening Lab", description: "Browser voice দিয়ে short listening sample ও check question।", icon: Mic, action: "Listening খুলো", href: "/listening", status: "available" },
+  { title: "Writing Desk", description: "Prompt, word count এবং locally saved writing draft।", icon: PenLine, action: "Writing খুলো", href: "/writing", status: "available" },
+  { title: "Roleplay Lab", description: "বাস্তব কথোপকথনের scenario-based browser recording practice।", icon: MessagesSquare, action: "Roleplay খুলুন", href: "/roleplay", status: "available" },
+  { title: "Pronunciation Lab", description: "Sound, stress এবং guided browser recording sample।", icon: Mic, action: "Pronunciation খুলো", href: "/pronunciation", status: "available" },
 ];
 
 const futureTools: Tool[] = [
-  { title: "AI Coach", description: "পরের ধাপে conversation, prompt এবং writing support এখানে আসবে।", icon: Sparkles, action: "বর্তমান tools দেখো", href: "/practice", status: "planned" },
-  { title: "Roleplay Lab", description: "বাস্তব কথোপকথনের scenario-based speaking practice।", icon: MessagesSquare, action: "Speaking roadmap", status: "planned" },
-  { title: "Pronunciation Lab", description: "Sound, stress এবং guided recording-এর জন্য প্রস্তুত surface।", icon: Mic, action: "বর্তমান lesson চালাও", href: "/course/course-english-foundations", status: "planned" },
-  { title: "Writing Desk", description: "Prompt, draft এবং writing feedback-এর জন্য future workspace।", icon: PenLine, action: "Practice শুরু করো", href: "/practice", status: "planned" },
+  { title: "AI Coach", description: "Future conversation ও writing support-এর জন্য transparent interface foundation।", icon: Sparkles, action: "Coach interface", href: "/ai", status: "planned" },
 ];
 
 function ToolCard({ tool }: { tool: Tool }) {

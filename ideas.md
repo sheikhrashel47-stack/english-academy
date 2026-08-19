@@ -71,3 +71,6 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - The **CEFR ribbon** is the primary learning-journey motif on dashboard and course views; future levels are factual and understated.
 - Manrope and Noto Sans Bengali remain the only interface typefaces. Serif display typography is not used in questions, course cards, headings or learning content.
 - CTA and status labels remain factual and instructional; planned tools explicitly identify their availability and point learners to a working alternative.
+- **Color discipline:** Academy Emerald `#146B4D` and soft mint are the only brand accents; copper, maroon, orange, purple and decorative warm stamps are excluded except for true semantic warning/error states.
+- **Bilingual hierarchy:** English target content leads at display scale, while Bangla guides and reassures in a calmer secondary line; equal-weight mixed-language display headlines are avoided unless the learning task requires both.
+- **Signature motif rule:** Every major learning screen carries one understated Academy motif—an Emerald focus line, learning-ledger row or CEFR/progress ribbon—so the workspace is recognisably English Academy rather than a generic education UI.

@@ -38,3 +38,14 @@
 - [x] Dashboard, learning map, course, lesson, practice, vocabulary, progress, tools ও settings-এর coherent initial UI shell implement করা।
 - [x] Responsive, keyboard, reduced-motion, empty/loading/error-state এবং production build validation সম্পন্ন করা।
 - [ ] নতুন design-system UI shell-এর checkpoint ও GitHub Pages deployment যাচাই করা।
+
+## Phase 1 functional-foundation reconciliation
+
+- [x] সংযুক্ত Phase 1 specification-এর সব remaining requirement ও current implementation coverage যাচাই করা।
+- [x] Scope-aware gap register, route compatibility map এবং staged delivery backlog নথিভুক্ত করা।
+- [x] Persisted Bangla, mixed ও English-immersion language modes বাস্তবায়ন করা।
+- [x] Specified canonical routes ও GitHub Pages-safe redirects/aliases সম্পূর্ণ করা।
+- [x] Functional Skills hub, listening, pronunciation, speaking-record UI এবং writing draft editor তৈরি করা।
+- [x] Reusable audio player ও graceful unavailable-audio state যুক্ত করা।
+- [x] Vocabulary detail/flashcard, mistake-review ও truthful coming-soon states সম্পন্ন করা।
+- [ ] End-to-end flows, local persistence, accessibility, tests, build ও GitHub Pages publication যাচাই করা।

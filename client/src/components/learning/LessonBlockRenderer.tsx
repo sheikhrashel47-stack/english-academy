@@ -3,6 +3,8 @@
  * use gentle margin notes rather than dense component chrome.
  */
 import { Lightbulb, Quote } from "lucide-react";
+import { AudioPlayer } from "@/components/learning/AudioPlayer";
+import { RecordingPanel } from "@/components/learning/RecordingPanel";
 import { QuestionCard } from "@/components/learning/QuestionCard";
 import type { LessonBlock, Question, VocabularyItem } from "@/domain/learning/types";
 
@@ -17,10 +19,13 @@ export function LessonBlockRenderer({ block, vocabulary, questions, onAnswered }
   }
   if (block.type === "example") return <blockquote className="lesson-example"><Quote size={22} /><div><strong>{block.english}</strong><span>{block.bangla}</span>{block.note && <em>{block.note}</em>}</div></blockquote>;
   if (block.type === "vocabulary") return <section className="lesson-vocabulary-grid">{vocabulary.filter((item) => block.vocabularyIds.includes(item.id)).map((item) => <article className="lesson-vocabulary" key={item.id}><span>{item.partOfSpeech}</span><strong>{item.word}</strong><p>{item.meaning}</p><small>{item.pronunciation}</small></article>)}</section>;
+  if (block.type === "audio") return <AudioPlayer label={block.label} text={block.transcript ?? "Audio sample is unavailable for this lesson."} transcript={block.transcript} />;
+  if (block.type === "speaking") return <RecordingPanel prompt={block.prompt} />;
   if (block.type === "question") {
     const question = questions.find((item) => item.id === block.questionId);
     return question ? <QuestionCard question={question} onAnswered={onAnswered} /> : null;
   }
+  if (block.type === "mini-test") return <section className="lesson-mini-test">{questions.filter((question) => block.questionIds.includes(question.id)).map((question) => <QuestionCard key={question.id} question={question} onAnswered={onAnswered} />)}</section>;
   if (block.type === "review") return <aside className="lesson-review"><span>পথের নোট</span><p>{block.text}</p></aside>;
   return null;
 }

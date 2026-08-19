@@ -5,7 +5,7 @@ import { validateLearningSeed } from "@/data/content/ContentValidator";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
 import { IntervalReviewScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, Attempt, GrammarTopic, Lesson, Level, MistakeRecord, Question, ReviewItem, Unit, UserLessonProgress, UserVocabularyProgress, VocabularyItem } from "@/domain/learning/types";
+import type { AppSettings, Attempt, GrammarTopic, Lesson, Level, MistakeRecord, Question, ReviewItem, Unit, UserLessonProgress, UserVocabularyProgress, VocabularyItem, WritingDraft } from "@/domain/learning/types";
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
@@ -17,7 +17,7 @@ export type AnswerRecord = ReturnType<typeof validateAnswer>;
 export type VocabularyEntry = { item: VocabularyItem; progress?: UserVocabularyProgress };
 export type MistakeBundle = { record: MistakeRecord; question?: Question };
 
-const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 2, updatedAt: new Date().toISOString(), theme: "light", soundEnabled: true, animationsEnabled: true, seedVersion });
+const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 3, updatedAt: new Date().toISOString(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
 class LearningRepository {
   async seedIfNeeded(): Promise<void> {
@@ -34,7 +34,11 @@ class LearningRepository {
     logger.debug("seed-loaded", { version: seedVersion });
   }
 
-  async getSettings(): Promise<AppSettings> { await this.seedIfNeeded(); return (await englishAcademyDb.get<AppSettings>(stores.settings, settingsId)) ?? defaultSettings(); }
+  async getSettings(): Promise<AppSettings> {
+    await this.seedIfNeeded();
+    const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
+    return { ...defaultSettings(), ...saved, id: settingsId };
+  }
   async updateSettings(patch: Partial<Omit<AppSettings, "id" | "schemaVersion" | "updatedAt">>): Promise<AppSettings> { const current = await this.getSettings(); const next = { ...current, ...patch, updatedAt: new Date().toISOString() }; await englishAcademyDb.put(stores.settings, next); return next; }
 
   async getLessonBundle(lessonId: string): Promise<LessonBundle> {
@@ -103,12 +107,39 @@ class LearningRepository {
     await englishAcademyDb.put(stores.vocabularyProgress, { id: existing?.id ?? `vocabulary-${learnerId}-${vocabularyId}`, schemaVersion: 2, updatedAt: timestamp, userId: learnerId, vocabularyId, learned: isCorrect || existing?.learned || false, recallCount: (existing?.recallCount ?? 0) + 1, correctCount: (existing?.correctCount ?? 0) + (isCorrect ? 1 : 0), wrongCount: (existing?.wrongCount ?? 0) + (isCorrect ? 0 : 1), lastReviewedAt: timestamp });
   }
 
+  async recordFlashcardReview(vocabularyId: string, rating: "again" | "hard" | "good" | "easy"): Promise<void> {
+    await this.seedIfNeeded();
+    const timestamp = new Date().toISOString();
+    const isCorrect = rating === "good" || rating === "easy";
+    await this.recordVocabularyRecall(vocabularyId, isCorrect, timestamp);
+    const reviewId = `review-vocabulary-${vocabularyId}`;
+    const prior = await englishAcademyDb.get<ReviewItem>(stores.reviewItems, reviewId);
+    const base: ReviewItem = prior ?? { id: reviewId, schemaVersion: 3, updatedAt: timestamp, userId: learnerId, itemId: vocabularyId, itemType: "vocabulary", masteryScore: 0, confidence: 0, attemptCount: 0, correctCount: 0, wrongCount: 0, nextReviewAt: timestamp, reviewLevel: 0 };
+    const scheduler = new IntervalReviewScheduler();
+    const reviewed = rating === "again" ? scheduler.recordFailure(base) : scheduler.recordSuccess(base);
+    await englishAcademyDb.put(stores.reviewItems, { ...reviewed, updatedAt: timestamp, confidence: rating === "easy" ? 3 : rating === "good" ? 2 : rating === "hard" ? 1 : 0, masteryScore: Math.round((reviewed.correctCount / Math.max(1, reviewed.attemptCount)) * 100) });
+  }
+
+  async getWritingDraft(promptId: string): Promise<WritingDraft | undefined> {
+    await this.seedIfNeeded();
+    return (await englishAcademyDb.getByIndex<WritingDraft>(stores.writingDrafts, "userPrompt", [learnerId, promptId]))[0];
+  }
+
+  async saveWritingDraft(promptId: string, text: string, submitted = false): Promise<WritingDraft> {
+    await this.seedIfNeeded();
+    const timestamp = new Date().toISOString();
+    const existing = await this.getWritingDraft(promptId);
+    const draft: WritingDraft = { id: existing?.id ?? `draft-${learnerId}-${promptId}`, schemaVersion: 3, updatedAt: timestamp, userId: learnerId, promptId, text, submittedAt: submitted ? timestamp : existing?.submittedAt };
+    await englishAcademyDb.put(stores.writingDrafts, draft);
+    return draft;
+  }
+
   async getMistakes(): Promise<MistakeBundle[]> { await this.seedIfNeeded(); const [records, questions] = await Promise.all([englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<Question>(stores.questions)]); return records.filter((record) => record.userId === learnerId && !record.resolved).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).map((record) => ({ record, question: questions.find((question) => question.id === record.questionId) })); }
   async getProgressSnapshot() { await this.seedIfNeeded(); const [roadmap, vocabulary, mistakes, attempts] = await Promise.all([this.getRoadmap(), this.getVocabularyEntries(), this.getMistakes(), englishAcademyDb.getAll<Attempt>(stores.attempts)]); const completed = roadmap.filter((item) => item.progress?.completed).length; const learned = vocabulary.filter((entry) => entry.progress?.learned).length; const skills = (["grammar", "vocabulary", "reading", "listening", "speaking", "writing"] as const).map((skill) => { const relevant = attempts.filter((attempt) => attempt.userId === learnerId && phase0Seed.questions.find((question) => question.id === attempt.questionId)?.skill === skill); return { skill, attempts: relevant.length, correct: relevant.filter((attempt) => attempt.isCorrect).length }; }); return { completed, totalLessons: roadmap.length, learned, totalVocabulary: vocabulary.length, mistakes: mistakes.length, skills, lastLessonId: (await this.getSettings()).lastLessonId }; }
 
-  async exportUserData() { await this.seedIfNeeded(); const [settings, progress, vocabularyProgress, attempts, mistakes, reviewItems] = await Promise.all([this.getSettings(), englishAcademyDb.getAll<UserLessonProgress>(stores.progress), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress), englishAcademyDb.getAll<Attempt>(stores.attempts), englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<ReviewItem>(stores.reviewItems)]); return { format: "english-academy-user-data", version: 1, exportedAt: new Date().toISOString(), settings, progress, vocabularyProgress, attempts, mistakes, reviewItems }; }
-  async importUserData(value: unknown): Promise<void> { const data = value as Record<string, unknown>; if (!data || data.format !== "english-academy-user-data" || !Array.isArray(data.progress)) throw new AppError("ContentError", "এই ফাইলটি English Academy backup নয়।"); await this.resetUserData(); const collections: Array<[typeof stores.progress | typeof stores.vocabularyProgress | typeof stores.attempts | typeof stores.mistakes | typeof stores.reviewItems, unknown]> = [[stores.progress, data.progress], [stores.vocabularyProgress, data.vocabularyProgress], [stores.attempts, data.attempts], [stores.mistakes, data.mistakes], [stores.reviewItems, data.reviewItems]]; await Promise.all(collections.flatMap(([store, values]) => Array.isArray(values) ? values.map((item) => englishAcademyDb.put(store, item)) : [])); if (data.settings && typeof data.settings === "object") await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(data.settings as AppSettings), id: settingsId, seedVersion }); }
-  async resetUserData(): Promise<void> { await this.seedIfNeeded(); const settings = await this.getSettings(); await Promise.all([englishAcademyDb.clear(stores.progress), englishAcademyDb.clear(stores.vocabularyProgress), englishAcademyDb.clear(stores.attempts), englishAcademyDb.clear(stores.mistakes), englishAcademyDb.clear(stores.reviewItems), englishAcademyDb.put(stores.settings, { ...settings, lastLessonId: undefined, updatedAt: new Date().toISOString() })]); }
+  async exportUserData() { await this.seedIfNeeded(); const [settings, progress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts] = await Promise.all([this.getSettings(), englishAcademyDb.getAll<UserLessonProgress>(stores.progress), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress), englishAcademyDb.getAll<Attempt>(stores.attempts), englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<ReviewItem>(stores.reviewItems), englishAcademyDb.getAll<WritingDraft>(stores.writingDrafts)]); return { format: "english-academy-user-data", version: 2, exportedAt: new Date().toISOString(), settings, progress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts }; }
+  async importUserData(value: unknown): Promise<void> { const data = value as Record<string, unknown>; if (!data || data.format !== "english-academy-user-data" || !Array.isArray(data.progress)) throw new AppError("ContentError", "এই ফাইলটি English Academy backup নয়।"); await this.resetUserData(); const collections: Array<[typeof stores.progress | typeof stores.vocabularyProgress | typeof stores.attempts | typeof stores.mistakes | typeof stores.reviewItems | typeof stores.writingDrafts, unknown]> = [[stores.progress, data.progress], [stores.vocabularyProgress, data.vocabularyProgress], [stores.attempts, data.attempts], [stores.mistakes, data.mistakes], [stores.reviewItems, data.reviewItems], [stores.writingDrafts, data.writingDrafts]]; await Promise.all(collections.flatMap(([store, values]) => Array.isArray(values) ? values.map((item) => englishAcademyDb.put(store, item)) : [])); if (data.settings && typeof data.settings === "object") await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(data.settings as AppSettings), id: settingsId, seedVersion }); }
+  async resetUserData(): Promise<void> { await this.seedIfNeeded(); const settings = await this.getSettings(); await Promise.all([englishAcademyDb.clear(stores.progress), englishAcademyDb.clear(stores.vocabularyProgress), englishAcademyDb.clear(stores.attempts), englishAcademyDb.clear(stores.mistakes), englishAcademyDb.clear(stores.reviewItems), englishAcademyDb.clear(stores.writingDrafts), englishAcademyDb.put(stores.settings, { ...settings, lastLessonId: undefined, updatedAt: new Date().toISOString() })]); }
 }
 
 export const learningRepository = new LearningRepository();

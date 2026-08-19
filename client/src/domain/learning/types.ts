@@ -3,6 +3,7 @@
 export type EntityId = string;
 export type LevelCode = "Pre-A1" | "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 export type Skill = "grammar" | "vocabulary" | "pronunciation" | "listening" | "speaking" | "reading" | "writing";
+export type LanguageMode = "bangla" | "mixed" | "immersion";
 
 export interface Versioned { id: EntityId; schemaVersion: number; updatedAt: string; }
 
@@ -117,7 +118,21 @@ export interface ReviewItem extends Versioned {
 }
 
 export interface AppSettings extends Versioned {
-  theme: "light" | "dark" | "focus"; soundEnabled: boolean; animationsEnabled: boolean; seedVersion?: string; lastLessonId?: EntityId;
+  theme: "light" | "dark" | "focus";
+  languageMode: LanguageMode;
+  soundEnabled: boolean;
+  animationsEnabled: boolean;
+  reducedMotion: boolean;
+  dailyGoalMinutes: 10 | 15 | 20 | 30;
+  seedVersion?: string;
+  lastLessonId?: EntityId;
+}
+
+export interface WritingDraft extends Versioned {
+  userId: EntityId;
+  promptId: EntityId;
+  text: string;
+  submittedAt?: string;
 }
 
 export type LearningSeed = {

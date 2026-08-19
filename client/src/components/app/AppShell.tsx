@@ -15,11 +15,15 @@ import {
   Menu,
   Settings,
   Sparkles,
+  Ear,
+  Mic2,
+  PenLine,
+  Search,
   Wrench,
   House,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -46,6 +50,9 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { href: "/vocabulary", label: "Vocabulary", icon: BookOpen },
       { href: "/grammar", label: "Grammar", icon: BookMarked },
+      { href: "/listening", label: "Listening", icon: Ear },
+      { href: "/speaking", label: "Speaking", icon: Mic2 },
+      { href: "/writing", label: "Writing", icon: PenLine },
       { href: "/mistakes", label: "Mistake Bank", icon: RotateCcw },
     ],
   },
@@ -66,9 +73,34 @@ const mobileNavigation: NavigationItem[] = [
   { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
 ];
 
+const quickDestinations = [
+  { href: "/learn", label: "Learning map", hint: "Course, level and unit" },
+  { href: "/practice/setup", label: "Practice setup", hint: "Questions and filters" },
+  { href: "/vocabulary", label: "Vocabulary library", hint: "Word search and pronunciation" },
+  { href: "/vocabulary/flashcards", label: "Flashcards", hint: "Local spaced review" },
+  { href: "/grammar", label: "Grammar", hint: "Topics and examples" },
+  { href: "/listening", label: "Listening Lab", hint: "Browser voice sample" },
+  { href: "/speaking", label: "Speaking Studio", hint: "Browser recording" },
+  { href: "/writing", label: "Writing Desk", hint: "Saved local draft" },
+  { href: "/review", label: "Review queue", hint: "Due local items" },
+  { href: "/progress", label: "Progress", hint: "CEFR learning ledger" },
+  { href: "/settings", label: "Settings", hint: "Language and accessibility" },
+];
+
 export function AppShell({ children, title, eyebrow }: AppShellProps) {
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const results = useMemo(() => quickDestinations.filter((item) => `${item.label} ${item.hint}`.toLowerCase().includes(query.toLowerCase())).slice(0, 6), [query]);
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setSearchOpen(true); }
+      if (event.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
 
   const sidebar = (
     <aside className="app-sidebar">
@@ -132,6 +164,7 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
             {title && <h1>{title}</h1>}
           </div>
           <div className="topbar-actions">
+            <button type="button" className="global-search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search study destinations"><Search size={16} /><span>Search</span><kbd>⌘K</kbd></button>
             <div className="streak-pill" aria-label="বর্তমান streak 3 দিন">
               <Sparkles size={15} /> <span>৩ দিনের ধারা</span>
             </div>
@@ -139,7 +172,7 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
           </div>
         </header>
 
-        <div className="content-stage">{children}</div>
+        <div className="content-stage"><div className="academy-focus-line" aria-hidden="true" />{children}</div>
         <nav className="mobile-bottom-nav" aria-label="দ্রুত নেভিগেশন">
           {mobileNavigation.map((item) => {
             const Icon = item.icon;
@@ -148,15 +181,16 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
           })}
         </nav>
       </main>
+      {searchOpen && <div className="global-search-backdrop" role="presentation" onMouseDown={() => setSearchOpen(false)}><section className="global-search-dialog" role="dialog" aria-modal="true" aria-label="Study search" onMouseDown={(event) => event.stopPropagation()}><div><Search size={18} /><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search learning, practice, tools…" aria-label="Search learning destinations"/><kbd>Esc</kbd></div><ul>{results.map((item) => <li key={item.href}><Link href={item.href} onClick={() => { setSearchOpen(false); setQuery(""); }}><span><strong>{item.label}</strong><small>{item.hint}</small></span><ChevronRight size={16} /></Link></li>)}{results.length === 0 && <li className="global-search-empty">কোনো matching destination নেই</li>}</ul></section></div>}
     </div>
   );
 }
 
 export function PhaseZeroNotice() {
   return (
-    <section className="phase-notice" aria-label="প্রাথমিক সংস্করণের সীমা">
+    <section className="phase-notice" aria-label="বর্তমান foundation-এর সীমা">
       <div className="phase-notice-icon"><Sparkles size={18} /></div>
-      <p><strong>Initial learning shell</strong> — এই সংস্করণে structured lesson, practice, progress ও offline storage ব্যবহার করা যায়। AI Coach, exam center ও detailed skill labs পরবর্তী ধাপে যুক্ত হবে।</p>
+      <p><strong>Offline-first learning foundation</strong> — structured lesson, practice, local review, browser audio/recording, writing draft এবং progress ব্যবহার করা যায়। AI feedback, cloud sync, full mock exams ও verified certificates এখনো চালু হয়নি।</p>
     </section>
   );
 }
