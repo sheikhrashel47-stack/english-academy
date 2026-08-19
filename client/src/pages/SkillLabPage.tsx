@@ -1,44 +1,65 @@
-/** Design reminder — Emerald Study House: skill labs are practical, calm and explicit about local browser capabilities. */
-import { BookOpenCheck, Ear, Mic2, PenLine, Volume2 } from "lucide-react";
+/** Emerald Study House: a three-zone academic skill desk where every action leaves honest local evidence. */
+import { BookOpenCheck, Ear, LoaderCircle, MessageCircle, Mic2, PenLine, Volume2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
 import { AppShell } from "@/components/app/AppShell";
-import { AudioPlayer } from "@/components/learning/AudioPlayer";
-import { RecordingPanel } from "@/components/learning/RecordingPanel";
+import { SkillActivityRuntime } from "@/components/learning/SkillActivityRuntime";
 import { Button } from "@/components/ui/button";
-import { useLearningPreferences } from "@/contexts/LearningPreferencesContext";
-import { skillLabSamples } from "@/data/content/skillLabSamples";
+import type { LabSkill, Phrase, SkillActivity, SkillMastery } from "@/domain/learning/types";
 
-type SkillLab = "listening" | "pronunciation" | "speaking" | "writing" | "reading";
-const labels: Record<SkillLab, { title: string; eyebrow: string; icon: typeof Ear }> = { listening: { title: "Listening Lab", eyebrow: "Skill practice", icon: Ear }, pronunciation: { title: "Pronunciation Lab", eyebrow: "Skill practice", icon: Volume2 }, speaking: { title: "Speaking Studio", eyebrow: "Skill practice", icon: Mic2 }, writing: { title: "Writing Desk", eyebrow: "Skill practice", icon: PenLine }, reading: { title: "Reading Room", eyebrow: "Skill practice", icon: BookOpenCheck } };
-const taskCopy: Record<SkillLab, { english: string; bangla: string; detailEnglish: string; detailBangla: string }> = {
-  listening: { english: "Listen for the speaker’s name", bangla: "শুনে বক্তার নামটি খুঁজে বের করো", detailEnglish: "Play a short voice sample, then answer one listening question.", detailBangla: "ছোট voice sample শোনো, তারপর একটি listening question-এর উত্তর দাও।" },
-  pronunciation: { english: "Hear the phrase, then say it clearly", bangla: "বাক্যটি শোনো, তারপর স্পষ্ট করে বলো", detailEnglish: "Use browser audio and an optional local recording to compare your own attempt.", detailBangla: "Browser audio শোনো এবং চাইলে নিজের চেষ্টা locally record করো।" },
-  speaking: { english: "Say one clear self-introduction", bangla: "একটি স্পষ্ট self-introduction বলো", detailEnglish: "Record a short spoken answer in this browser. No automatic score is claimed.", detailBangla: "এই browser-এ ছোট spoken answer record করো; কোনো automatic score দেখানো হচ্ছে না।" },
-  writing: { english: "Write a short introduction in English", bangla: "ইংরেজিতে ছোট পরিচয় লেখো", detailEnglish: "Draft your response and keep it on this device for later review.", detailBangla: "উত্তরটি draft করে এই device-এ পরের review-এর জন্য রেখে দাও।" },
-  reading: { english: "Read one short levelled text", bangla: "একটি ছোট levelled text পড়ো", detailEnglish: "The next reading sample will appear with the next content release.", detailBangla: "পরের content release-এ reading sample যুক্ত হবে।" },
+type SkillLab = LabSkill;
+const stages: SkillActivity["stage"][] = ["learn", "guided-practice", "independent-practice", "assessment", "review"];
+const stageCopy: Record<SkillActivity["stage"], { english: string; bangla: string }> = { learn: { english: "Learn", bangla: "শিখো" }, "guided-practice": { english: "Guided", bangla: "নির্দেশিত" }, "independent-practice": { english: "Independent", bangla: "স্বাধীন" }, assessment: { english: "Assess", bangla: "মূল্যায়ন" }, review: { english: "Review", bangla: "পুনরালোচনা" } };
+const labels: Record<SkillLab, { title: string; bangla: string; eyebrow: string; icon: typeof Ear; note: string }> = {
+  listening: { title: "Listening Lab", bangla: "শোনার ল্যাব", eyebrow: "Six-skill study desk", icon: Ear, note: "শুনো, detail ধরো, তারপর attempt record করো।" },
+  pronunciation: { title: "Pronunciation Lab", bangla: "উচ্চারণ ল্যাব", eyebrow: "Six-skill study desk", icon: Volume2, note: "Model শুনে local recording-এ নিজের চেষ্টা করো।" },
+  speaking: { title: "Speaking Studio", bangla: "কথা বলার স্টুডিও", eyebrow: "Six-skill study desk", icon: Mic2, note: "Structured prompt-এ বলো; কোনো কৃত্রিম score দাবি করা হয় না।" },
+  reading: { title: "Reading Room", bangla: "পাঠের ঘর", eyebrow: "Six-skill study desk", icon: BookOpenCheck, note: "Levelled text পড়ো, evidence দিয়ে meaning ও detail যাচাই করো।" },
+  writing: { title: "Writing Desk", bangla: "লেখার ডেস্ক", eyebrow: "Six-skill study desk", icon: PenLine, note: "Draft local device-এ autosave হয়; submit করলে attempt ledger-এ থাকে।" },
+  communication: { title: "Communication Studio", bangla: "যোগাযোগ স্টুডিও", eyebrow: "Six-skill study desk", icon: MessageCircle, note: "বাস্তব পরিস্থিতির phrase ও polite response ধাপে ধাপে অনুশীলন করো।" },
+};
+const labMethod: Record<SkillLab, string> = {
+  listening: "শুনো → clue নাও → উত্তর যাচাই",
+  pronunciation: "মডেল শোনো → record করো → নিজে তুলনা করো",
+  speaking: "Prompt পড়ো → বলো → confidence record করো",
+  reading: "পড়ো → শব্দ দেখো → evidence দাও",
+  writing: "পরিকল্পনা করো → লেখো → local draft জমা দাও",
+  communication: "পরিস্থিতি বোঝো → register বেছে নাও → response বলো",
 };
 
-function languageCopy(mode: "bangla" | "mixed" | "immersion", bangla: string, english: string) { return mode === "bangla" ? bangla : mode === "immersion" ? english : `${english} · ${bangla}`; }
-
-function WritingDesk() {
-  const sample = skillLabSamples.writing;
-  const [text, setText] = useState("");
-  const [ready, setReady] = useState(false);
-  useEffect(() => { void learningUseCases.getWritingDraft(sample.id).then((draft) => { setText(draft?.text ?? ""); setReady(true); }); }, [sample.id]);
-  const words = useMemo(() => text.trim() ? text.trim().split(/\s+/).length : 0, [text]);
-  const save = async (submitted = false) => { await learningUseCases.saveWritingDraft(sample.id, text, submitted); toast.success(submitted ? "Writing sample locally submitted হয়েছে; এই phase-এ automated feedback নেই।" : "Draft এই device-এ save হয়েছে। "); };
-  return <section className="writing-desk paper-card"><p className="card-kicker">Sample writing task</p><h2>{sample.title}</h2><p>{sample.prompt}</p><textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Write your answer in English…" aria-label="Writing response" disabled={!ready} /><div className="writing-toolbar"><span>{words} words</span><div><Button type="button" variant="outline" onClick={() => setText("")}>Clear</Button><Button type="button" variant="outline" onClick={() => void save(false)}>Save draft</Button><Button type="button" onClick={() => void save(true)} disabled={!text.trim()}>Submit</Button></div></div><small>Draftটি IndexedDB-তে থাকে; cloud sync বা AI feedback এই phase-এ নেই।</small></section>;
-}
+function initialMastery(skill: SkillLab): SkillMastery { return { id: `pending-${skill}`, schemaVersion: 6, updatedAt: "", userId: "local-learner", skill, state: "not-started", activitiesCompleted: 0, attemptCount: 0, correctCount: 0, totalTimeSeconds: 0 }; }
 
 export default function SkillLabPage({ skill }: { skill: SkillLab }) {
   const meta = labels[skill];
   const Icon = meta.icon;
-  const { languageMode } = useLearningPreferences();
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
-  const listening = skillLabSamples.listening;
-  const intro = taskCopy[skill];
-  return <AppShell eyebrow={meta.eyebrow} title={meta.title}><div className="skill-lab-intro paper-card"><span className="skill-lab-icon"><Icon size={23} /></span><div><p className="card-kicker">Independent practice</p><h2><span>{intro.english}</span>{languageMode !== "immersion" && <small>{intro.bangla}</small>}</h2><p>{languageCopy(languageMode, intro.detailBangla, intro.detailEnglish)}</p></div></div>{skill === "listening" && <section className="skill-lab-grid"><AudioPlayer label={listening.title} text={listening.transcript} transcript={listening.transcript} /><article className="skill-question paper-card"><p className="card-kicker">Check understanding</p><h2>{listening.prompt}</h2><div>{listening.options.map((option) => <button type="button" key={option} className={answer === option ? "skill-option skill-option-selected" : "skill-option"} onClick={() => { setAnswer(option); setChecked(false); }}>{option}</button>)}</div><Button type="button" onClick={() => setChecked(true)} disabled={!answer}>Check answer</Button>{checked && <p className={answer === listening.answer ? "skill-feedback skill-feedback-correct" : "skill-feedback skill-feedback-wrong"}>{answer === listening.answer ? "Correct — Rina is speaking." : "Try again. Listen once more and focus on the name."}</p>}</article></section>}{skill === "pronunciation" && <section className="skill-lab-grid"><AudioPlayer label={skillLabSamples.pronunciation.title} text={skillLabSamples.pronunciation.transcript} transcript={skillLabSamples.pronunciation.transcript} /><RecordingPanel prompt={skillLabSamples.pronunciation.prompt} /></section>}{skill === "speaking" && <RecordingPanel prompt="Say: Hello, my name is ____. Nice to meet you." />}{skill === "writing" && <WritingDesk />}{skill === "reading" && <article className="skill-placeholder paper-card"><BookOpenCheck size={28} /><h2>Reading starter</h2><p>Short, level-tagged reading passages will be added with the next content release. Use the current lessons for the available sample reading practice.</p></article>}</AppShell>;
+  const [activities, setActivities] = useState<SkillActivity[]>([]);
+  const [activeId, setActiveId] = useState<string>();
+  const [mastery, setMastery] = useState<SkillMastery>(() => initialMastery(skill));
+  const [phrases, setPhrases] = useState<Phrase[]>([]);
+  const [phraseQuery, setPhraseQuery] = useState("");
+  const [phraseFormality, setPhraseFormality] = useState<"all" | Phrase["formality"]>("all");
+  const [loading, setLoading] = useState(true);
+  const activeActivity = useMemo(() => activities.find((item) => item.id === activeId) ?? activities[0], [activities, activeId]);
+  const grouped = useMemo(() => stages.map((stage) => ({ stage, activities: activities.filter((item) => item.stage === stage) })), [activities]);
+  const filteredPhrases = useMemo(() => phrases.filter((phrase) => (phraseFormality === "all" || phrase.formality === phraseFormality) && `${phrase.phrase} ${phrase.meaning} ${phrase.meaning_bn} ${phrase.context}`.toLocaleLowerCase("en-US").includes(phraseQuery.toLocaleLowerCase("en-US"))), [phraseFormality, phraseQuery, phrases]);
+  const refreshMastery = async () => { const records = await learningUseCases.getSkillMastery(); setMastery(records.find((item) => item.skill === skill) ?? initialMastery(skill)); };
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true); setActivities([]); setActiveId(undefined); setMastery(initialMastery(skill));
+    void Promise.all([learningUseCases.getSkillActivities({ skill, page: 1, pageSize: 24 }), learningUseCases.getSkillMastery(), skill === "communication" ? learningUseCases.getPhrases() : Promise.resolve([])]).then(([catalogue, records, phraseRecords]) => {
+      if (!mounted) return;
+      setActivities(catalogue.activities); setPhrases(phraseRecords); setActiveId(catalogue.activities[0]?.id); setMastery(records.find((item) => item.skill === skill) ?? initialMastery(skill)); setLoading(false);
+    }).catch(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
+  }, [skill]);
+
+  return <AppShell eyebrow={meta.eyebrow} title={meta.title}>
+    <section className="skill-lab-hero paper-card"><span className="skill-lab-icon"><Icon size={23} /></span><div><p className="card-kicker">{meta.bangla} · {activities.length || "…"} original activities</p><h2>{meta.note}</h2><p>একটি activity শেষ হলে local attempt, ভুলের pattern ও skill mastery ledger হালনাগাদ হয়।</p><div className="skill-hero-action"><Button type="button" disabled={loading || !activeActivity} onClick={() => document.getElementById(`skill-workspace-${skill}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>{activeActivity ? `${stageCopy[activeActivity.stage].bangla} activity শুরু` : "Catalogue প্রস্তুত হচ্ছে"}</Button><span>{labMethod[skill]}</span></div></div><aside><strong>{mastery.state.replace("-", " ")}</strong><span>{mastery.activitiesCompleted} completed · {mastery.accuracy ?? "—"}% recorded accuracy</span></aside></section>
+    <section className="skill-progress-ledger" aria-label={`${meta.title} progress ledger`}><span>LEARNING LEDGER</span><b>{mastery.attemptCount} attempts</b><b>{mastery.correctCount} scored correct</b><b>{mastery.totalTimeSeconds ? `${Math.ceil(mastery.totalTimeSeconds / 60)} min` : "0 min"} evidence</b><small>{mastery.latestConfidence ? `Latest confidence: ${mastery.latestConfidence}` : "প্রথম activity সম্পন্ন করলে তোমার practice record এখানে দেখা যাবে।"}</small></section>
+    {skill === "communication" && <section className="phrase-library paper-card"><div className="phrase-library-heading"><div><p className="card-kicker">Communication phrase shelf</p><h2>Situation অনুযায়ী phrase বেছে নাও</h2><p>Phrase library-টি original, local এবং topic/formality দিয়ে filter করা যায়।</p></div><span>{filteredPhrases.length} phrases</span></div><div className="phrase-controls"><input value={phraseQuery} onChange={(event) => setPhraseQuery(event.target.value)} placeholder="Search phrase or Bangla meaning" aria-label="Search communication phrases" /><select value={phraseFormality} onChange={(event) => setPhraseFormality(event.target.value as "all" | Phrase["formality"])} aria-label="Filter phrase formality"><option value="all">All registers</option><option value="neutral">Neutral</option><option value="formal">Formal</option><option value="informal">Informal</option></select></div><div className="phrase-grid">{filteredPhrases.map((phrase) => <article key={phrase.id}><div><strong>{phrase.phrase}</strong><span>{phrase.formality}</span></div><p>{phrase.meaning_bn}</p><small>{phrase.context} · {phrase.level}</small><em>{phrase.example}</em></article>)}</div></section>}
+    {loading && <div className="skill-lab-loading"><LoaderCircle size={20} /> Catalogue খুলছে…</div>}
+    {!loading && activities.length === 0 && <section className="skill-lab-empty paper-card"><h2>এই skill-এর catalogue এখনো পাওয়া যাচ্ছে না</h2><p>Offline data preparation শেষ হলে আবার চেষ্টা করো।</p><Button type="button" variant="outline" onClick={() => window.location.reload()}>Reload catalogue</Button></section>}
+    {!loading && activities.length > 0 && <div className={`skill-lab-workspace workspace-${skill}`} id={`skill-workspace-${skill}`}><nav className="skill-stage-rail" aria-label="Activity stages">{grouped.map(({ stage, activities: entries }) => <section key={stage}><p>{stageCopy[stage].english}<small>{stageCopy[stage].bangla}</small></p><div>{entries.map((entry) => <button type="button" key={entry.id} className={activeActivity?.id === entry.id ? "skill-stage-card is-active" : "skill-stage-card"} onClick={() => setActiveId(entry.id)}><strong>{entry.title}</strong><span>{entry.level} · {entry.estimatedTime} min</span></button>)}</div></section>)}</nav><main>{activeActivity && <SkillActivityRuntime activity={activeActivity} onRecorded={() => void refreshMastery()} />}</main></div>}
+  </AppShell>;
 }

@@ -2,7 +2,7 @@
 
 export type EntityId = string;
 export type LevelCode = "Pre-A1" | "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
-export type Skill = "grammar" | "vocabulary" | "pronunciation" | "listening" | "speaking" | "reading" | "writing";
+export type Skill = "grammar" | "vocabulary" | "pronunciation" | "listening" | "speaking" | "reading" | "writing" | "communication";
 export type LanguageMode = "bangla" | "mixed" | "immersion";
 export type ContentStatus = "draft" | "published" | "archived";
 export type DifficultyBand = "beginner" | "elementary" | "intermediate" | "upper-intermediate" | "advanced";
@@ -11,7 +11,7 @@ export type LearningEventType = "lesson-started" | "lesson-completed" | "practic
 export type VocabularyMasteryState = "new" | "learning" | "familiar" | "strong" | "mastered";
 export type FlashcardRating = "again" | "hard" | "good" | "easy";
 export type DiagnosticSkill = "vocabulary" | "grammar" | "reading" | "listening";
-export type SupportedLicense = "MIT" | "Apache-2.0" | "CC0-1.0" | "CC-BY-2.0-FR" | "CC-BY-4.0" | "CC-BY-SA-4.0" | "WordNet-3.0" | "Public-Domain" | "Other";
+export type SupportedLicense = "MIT" | "Apache-2.0" | "CC0-1.0" | "CC-BY-2.0-FR" | "CC-BY-4.0" | "CC-BY-SA-4.0" | "WordNet-3.0" | "Public-Domain" | "Original" | "Other";
 
 export interface Versioned {
   id: EntityId;
@@ -175,7 +175,72 @@ export interface LearningSession extends Versioned { userId: EntityId; activity:
 export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; audioPackVersion?: string; lastLessonId?: EntityId; diagnosticResult?: DiagnosticResult; }
 export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
 
+/** The skill labs share one activity contract while preserving each skill's own payload shape. */
+export type LabSkill = "listening" | "pronunciation" | "speaking" | "reading" | "writing" | "communication";
+export type SkillActivityStage = "learn" | "guided-practice" | "independent-practice" | "assessment" | "review";
+export type SkillActivityKind = "listen-choose" | "listen-type" | "dictation" | "minimal-pair" | "repeat" | "read-aloud" | "roleplay" | "reading-check" | "writing-task" | "communication-scenario";
+export type SkillMasteryState = "not-started" | "learning" | "practicing" | "strong" | "mastered";
+export type SkillConfidence = "low" | "medium" | "high";
+
+export interface SkillContentSource extends Versioned {
+  name: string; creator: string; url?: string; license: SupportedLicense; licenseUrl?: string; attribution: string; commercialUseAllowed: boolean; notice?: string;
+}
+
+export interface SkillActivityContent {
+  text?: string;
+  transcript?: string;
+  prompt?: string;
+  banglaPrompt?: string;
+  options?: QuestionOption[];
+  acceptedAnswers?: string[];
+  correctOptionId?: EntityId;
+  explanation?: string;
+  vocabulary?: Array<{ word: string; meaning_bn: string; pronunciation?: string; example?: string }>;
+  usefulPhrases?: EntityId[];
+  expectedLanguage?: string[];
+  role?: string;
+  goal?: string;
+  preparationSeconds?: number;
+  speakingSeconds?: number;
+  imageAlt?: string;
+}
+
+export interface SkillActivity extends Versioned {
+  skill: LabSkill; stage: SkillActivityStage; kind: SkillActivityKind; level: LevelCode; topic: string; difficulty: 1 | 2 | 3 | 4 | 5;
+  title: string; banglaTitle: string; instructions: string; banglaInstructions: string; content: SkillActivityContent; estimatedTime: number;
+  prerequisites: EntityId[]; assessment: { required: boolean; minimumScore?: number; transcriptAllowed?: boolean; confidenceRequired?: boolean };
+  completionRule: { type: "complete" | "correct" | "minimum-score" | "self-reflection"; minimumScore?: number };
+  sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; attribution: string; commercialUseAllowed: boolean;
+}
+
+export interface Phrase extends Versioned {
+  phrase: string; meaning: string; meaning_bn: string; pronunciation?: string; context: string; level: LevelCode; topic: string; example: string;
+  formality: "neutral" | "informal" | "formal"; sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; attribution: string; commercialUseAllowed: boolean;
+}
+
+export interface SkillAttempt extends Versioned {
+  userId: EntityId; activityId: EntityId; skill: LabSkill; stage: SkillActivityStage; response?: string; selectedOptionId?: EntityId;
+  isCorrect?: boolean; score?: number; confidence?: SkillConfidence; attempts: number; timeSpentSeconds?: number; submittedAt: string;
+  feedbackState: "instant" | "self-reflection" | "manual-review" | "analysis-unavailable";
+}
+
+export interface SkillError extends Versioned {
+  userId: EntityId; activityId: EntityId; skill: LabSkill; type: string; content: string; userResponse?: string; correctResponse?: string;
+  explanation: string; timestamp: string; frequency: number; resolved: boolean;
+}
+
+export interface SkillMastery extends Versioned {
+  userId: EntityId; skill: LabSkill; state: SkillMasteryState; activitiesCompleted: number; attemptCount: number; correctCount: number;
+  accuracy?: number; totalTimeSeconds: number; latestConfidence?: SkillConfidence; lastActivityAt?: string;
+}
+
+export interface PronunciationAnalysis { score?: number; detectedIssues: string[]; suggestions: string[]; confidence?: number; status: "available" | "manual-review" | "unavailable"; }
+export interface PronunciationAnalyzer { analyze(input: { audio: Blob; targetText: string; locale: string }): Promise<PronunciationAnalysis>; }
+export interface WritingAnalysis { score?: number; issues: Array<{ category: string; message: string }>; suggestions: string[]; strengths: string[]; status: "available" | "manual-review" | "unavailable"; }
+export interface WritingAnalyzer { analyze(input: { text: string; activityId: EntityId; level: LevelCode }): Promise<WritingAnalysis>; }
+
 export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };
 export type VocabularySearchFilters = { query?: string; letter?: string; level?: LevelCode; topic?: string; partOfSpeech?: string; masteryState?: VocabularyMasteryState; page?: number; pageSize?: number; };
 export type VocabularySearchResult = { entries: Array<{ item: VocabularyItem; progress?: UserVocabularyProgress; srsCard?: SRSCard }>; page: number; pageSize: number; total: number; hasMore: boolean; };
 export type GrammarConceptFilters = { level?: LevelCode; category?: string; page?: number; pageSize?: number; };
+export type SkillActivityFilters = { skill?: LabSkill; stage?: SkillActivityStage; level?: LevelCode; topic?: string; page?: number; pageSize?: number; };

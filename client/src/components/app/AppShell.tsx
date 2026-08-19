@@ -170,8 +170,8 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
           </div>
           <div className="topbar-actions">
             <button type="button" className="global-search-trigger" onClick={() => setSearchOpen(true)} aria-label="Search study destinations"><Search size={16} /><span>Search</span><kbd>⌘K</kbd></button>
-            <div className="streak-pill" aria-label="বর্তমান streak 3 দিন">
-              <Sparkles size={15} /> <span>৩ দিনের ধারা</span>
+            <div className="streak-pill" aria-label="Offline-first local learning record">
+              <BookOpen size={15} /> <span>লোকাল রেকর্ড</span>
             </div>
             <Link href="/settings" className="avatar-button" aria-label="প্রোফাইল ও সেটিংস">র</Link>
           </div>

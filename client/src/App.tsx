@@ -72,11 +72,13 @@ function Router() {
         <Route path="/skills/speaking" component={() => <SkillLabPage skill="speaking" />} />
         <Route path="/skills/writing" component={() => <SkillLabPage skill="writing" />} />
         <Route path="/skills/reading" component={() => <SkillLabPage skill="reading" />} />
+        <Route path="/skills/communication" component={() => <SkillLabPage skill="communication" />} />
         <Route path="/listening" component={() => <SkillLabPage skill="listening" />} />
         <Route path="/pronunciation" component={() => <SkillLabPage skill="pronunciation" />} />
         <Route path="/speaking" component={() => <SkillLabPage skill="speaking" />} />
         <Route path="/writing" component={() => <SkillLabPage skill="writing" />} />
         <Route path="/reading" component={() => <SkillLabPage skill="reading" />} />
+        <Route path="/communication" component={() => <SkillLabPage skill="communication" />} />
         <Route path="/mistakes" component={MistakeBankPage} />
         <Route path="/review" component={ReviewPage} />
         <Route path="/flashcards" component={FlashcardsPage} />

@@ -80,3 +80,7 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - Vocabulary catalogue screens use library, register, ledger or CEFR-connected study language only; “Atlas” terminology is excluded.
 - The A–Z rail remains secondary navigation. A factual CEFR-ledger cue is visually present before filters and word cards.
 - Library cards do not present placeholder-like examples as teaching material. Learners follow the entry route for attributed usage sentences and detailed study context.
+- Every skill-lab hero presents one explicit Academy-Emerald learning action before status, metrics or catalogue controls; status remains supporting evidence.
+- Skill labs use a shared learning system but expose a factual skill-specific method cue, such as listening clues, reading evidence or communication register, rather than swapped-label templates.
+- Progress surfaces use a connected Pre-A1–C2 CEFR ribbon that names current focus and the next factual level.
+- Global motivation language is factual and ledger-based. Streak, journey-day, reward and sparkle framing are excluded unless backed by real semantic progress evidence.

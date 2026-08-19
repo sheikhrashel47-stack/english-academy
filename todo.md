@@ -110,3 +110,15 @@
 - [x] Vocabulary page-এ All words, A–Z category chips, category total এবং active-filter state যোগ করা।
 - [x] ২০,০০০+ শব্দ page-by-page browse, name/Bangla meaning search এবং letter-filter একসঙ্গে কাজ করছে নিশ্চিত করা।
 - [x] Mobile responsive A–Z navigation, pagination এবং no-result state যাচাই করে GitHub Pages release publish করা।
+
+## Phase 4 complete language skills lab
+
+- [x] Attached Phase 4 specification-এর six-skill requirements, existing Phase 1–4 surfaces ও implementation gaps reconcile করা।
+- [x] Shared SkillActivity, attempt, error, phrase, source-license এবং mastery contracts; IndexedDB persistence ও migration তৈরি করা।
+- [x] Licensed/original metadata-সহ Listening, Pronunciation, Speaking, Reading, Writing ও Communication-এর original demonstration activity catalogue তৈরি করা।
+- [x] Reusable audio, recorder, activity assessment, feedback, transcript gating, writing autosave এবং learner-safe error/fallback runtime তৈরি করা।
+- [x] Listening, Pronunciation ও Speaking-এর interactive Learn → Practice → Feedback → Review workflows বাস্তবায়ন করা।
+- [x] Reading, Writing ও Communication-এর interactive Learn → Practice → Feedback → Review workflows এবং phrase library বাস্তবায়ন করা।
+- [x] Real attempt-driven skill mastery, error bank, recommendation foundation, dashboard/progress/mistake integration সম্পন্ন করা।
+- [x] Tests, offline behavior, mobile responsiveness, production build এবং GitHub Pages release যাচাই করা।
+- [ ] Phase 4 architecture, supported workflows, known limitations ও deployment ফলাফল deliver করা।

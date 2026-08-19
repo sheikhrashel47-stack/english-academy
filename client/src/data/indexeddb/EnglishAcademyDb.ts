@@ -1,13 +1,14 @@
 import { AppError } from "@/core/errors/AppError";
 
 export const DB_NAME = "english-academy";
-export const DB_VERSION = 5;
+export const DB_VERSION = 6;
 
 export const stores = {
   courses: "courses", levels: "levels", units: "units", chapters: "chapters", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
   grammarTopics: "grammarTopics", grammarConcepts: "grammarConcepts", vocabularySources: "vocabularySources", sentences: "sentences", srsCards: "srsCards",
   progress: "progress", activityProgress: "activityProgress", vocabularyProgress: "vocabularyProgress", attempts: "attempts", mistakes: "mistakes",
   reviewItems: "reviewItems", objectives: "objectives", bookmarks: "bookmarks", notes: "notes", sessions: "sessions", settings: "settings", writingDrafts: "writingDrafts",
+  skillActivities: "skillActivities", skillSources: "skillSources", phrases: "phrases", skillAttempts: "skillAttempts", skillErrors: "skillErrors", skillMastery: "skillMastery",
 } as const;
 
 export type StoreName = (typeof stores)[keyof typeof stores];
@@ -57,6 +58,12 @@ class EnglishAcademyDb {
     const sessionStore = create(stores.sessions); index(sessionStore, "userStarted", ["userId", "startedAt"]);
     create(stores.settings);
     const draftStore = create(stores.writingDrafts); index(draftStore, "userPrompt", ["userId", "promptId"], true);
+    const skillActivityStore = create(stores.skillActivities); index(skillActivityStore, "skill", "skill"); index(skillActivityStore, "level", "level"); index(skillActivityStore, "stage", "stage"); index(skillActivityStore, "skillLevel", ["skill", "level"]); index(skillActivityStore, "skillStage", ["skill", "stage"]);
+    create(stores.skillSources);
+    const phraseStore = create(stores.phrases); index(phraseStore, "topic", "topic"); index(phraseStore, "level", "level"); index(phraseStore, "topicLevel", ["topic", "level"]);
+    const skillAttemptStore = create(stores.skillAttempts); index(skillAttemptStore, "userActivity", ["userId", "activityId"]); index(skillAttemptStore, "userSkill", ["userId", "skill"]); index(skillAttemptStore, "activityId", "activityId");
+    const skillErrorStore = create(stores.skillErrors); index(skillErrorStore, "userSkill", ["userId", "skill"]); index(skillErrorStore, "userActivity", ["userId", "activityId"]); index(skillErrorStore, "resolved", "resolved");
+    const skillMasteryStore = create(stores.skillMastery); index(skillMasteryStore, "userSkill", ["userId", "skill"], true);
   }
 
   async get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined> { return this.run<T | undefined>(store, "readonly", (objectStore) => objectStore.get(key)); }

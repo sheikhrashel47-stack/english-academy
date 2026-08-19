@@ -1,20 +1,22 @@
 /** Design reminder — “ভাষার মানচিত্র”: mistakes are revisit pins, never failure cards. */
-import { Compass, RotateCcw, TriangleAlert } from "lucide-react";
+import { BookOpenCheck, RotateCcw, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
 import { AppShell } from "@/components/app/AppShell";
 import { QuestionCard } from "@/components/learning/QuestionCard";
-import type { MistakeRecord, Question } from "@/domain/learning/types";
+import type { MistakeRecord, Question, SkillError } from "@/domain/learning/types";
 
 type MistakeBundle = { record: MistakeRecord; question?: Question };
 export default function MistakeBankPage() {
   const [mistakes, setMistakes] = useState<MistakeBundle[]>([]);
+  const [skillErrors, setSkillErrors] = useState<SkillError[]>([]);
   const [selectedId, setSelectedId] = useState("");
-  const reload = useCallback(async () => { const next = await learningUseCases.getMistakes(); setMistakes(next); setSelectedId((current) => next.some(({ record }) => record.id === current) ? current : next[0]?.record.id ?? ""); }, []);
+  const reload = useCallback(async () => { const [next, nextSkillErrors] = await Promise.all([learningUseCases.getMistakes(), learningUseCases.getSkillErrors()]); setMistakes(next); setSkillErrors(nextSkillErrors); setSelectedId((current) => next.some(({ record }) => record.id === current) ? current : next[0]?.record.id ?? ""); }, []);
   useEffect(() => { void reload(); }, [reload]);
   const active = mistakes.find(({ record }) => record.id === selectedId) ?? mistakes[0];
-  return <AppShell eyebrow="Revisit pins" title="Mistake Bank">
-    <section className="mistake-intro paper-card map-contour"><div><p className="card-kicker"><TriangleAlert size={15} /> ভুল মানেই ফেরার পথ</p><h2>যে জায়গায় থেমেছিলে,<br /><em>সেখান থেকেই আবার শুরু।</em></h2><p>ভুল উত্তরগুলো এখানে আলাদা pin হিসেবে থাকে। সঠিক হলে pin-টি map থেকে সরে যাবে।</p></div><strong>{mistakes.length}<small>টি active pin</small></strong></section>
-    {!mistakes.length ? <section className="mistake-empty paper-card"><Compass size={28} /><h2>এখন কোনো revisit pin নেই</h2><p>Practice বা lesson-এ ভুল হলে সেটি এখানে ফিরে আসবে।</p></section> : <section className="mistake-layout"><aside className="mistake-list" aria-label="mistakes list">{mistakes.map(({ record, question }, index) => <button type="button" className={record.id === active?.record.id ? "mistake-list-active" : ""} key={record.id} onClick={() => setSelectedId(record.id)}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{question?.prompt ?? "Question unavailable"}</strong><small>{record.reason} · আবার চেষ্টা করো</small></div><RotateCcw size={16} /></button>)}</aside><div className="mistake-retry">{active.question ? <QuestionCard question={active.question} onAnswered={() => void reload()} /> : <p>এই প্রশ্নটি আর পাওয়া যাচ্ছে না।</p>}</div></section>}
+  return <AppShell eyebrow="Review record" title="Mistake Bank">
+    <section className="mistake-intro paper-card"><div><p className="card-kicker"><TriangleAlert size={15} /> ভুল মানেই targeted review</p><h2>যে জায়গায় থেমেছিলে,<br /><em>সেখান থেকেই আবার শুরু।</em></h2><p>Lesson ও skill practice-এর ভুলগুলো local learning record-এ থাকে। Evidence ছাড়া কোনো ভুল দেখানো হয় না।</p></div><strong>{mistakes.length + skillErrors.length}<small>টি active record</small></strong></section>
+    <section className="skill-error-sheet paper-card"><header><div><p className="card-kicker">Skill error record</p><h2 className="section-title">Six-skill review queue</h2></div><BookOpenCheck size={21} /></header>{skillErrors.length ? <div className="skill-error-list">{skillErrors.map((error) => <article key={error.id}><span>{error.skill}</span><div><strong>{error.content}</strong><p>{error.explanation}</p><small>{error.frequency} time{error.frequency === 1 ? "" : "s"} · {new Date(error.timestamp).toLocaleDateString("en-GB")}</small></div><a href={`${import.meta.env.BASE_URL}skills/${error.skill}`}>Review</a></article>)}</div> : <p className="skill-error-empty">Skill lab-এ scored activity ভুল হলে সেটি এখানে বিষয়ভিত্তিক review task হিসেবে দেখা যাবে।</p>}</section>
+    {!mistakes.length ? <section className="mistake-empty paper-card"><BookOpenCheck size={28} /><h2>এখন কোনো lesson retry নেই</h2><p>Lesson বা practice-এ ভুল হলে সেটি এখানে ফিরে আসবে।</p></section> : <section className="mistake-layout"><aside className="mistake-list" aria-label="mistakes list">{mistakes.map(({ record, question }, index) => <button type="button" className={record.id === active?.record.id ? "mistake-list-active" : ""} key={record.id} onClick={() => setSelectedId(record.id)}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{question?.prompt ?? "Question unavailable"}</strong><small>{record.reason} · আবার চেষ্টা করো</small></div><RotateCcw size={16} /></button>)}</aside><div className="mistake-retry">{active.question ? <QuestionCard question={active.question} onAnswered={() => void reload()} /> : <p>এই প্রশ্নটি আর পাওয়া যাচ্ছে না।</p>}</div></section>}
   </AppShell>;
 }
