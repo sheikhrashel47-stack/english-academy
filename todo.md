@@ -79,3 +79,12 @@
 - [ ] IndexedDB search indexes ও paginated query API দিয়ে corpus-scale search/filter performance নিশ্চিত করা।
 - [ ] Demonstration sample, aggregate corpus manifest এবং data-license diagnostics আলাদা রেখে deployed bundle সীমিত রাখা।
 - [ ] ২০,০০০ vocabulary ও ৫০,০০০ sentence-equivalent synthetic-structure benchmark চালিয়ে storage, import ও query performance নথিভুক্ত করা।
+
+## Phase 3 real licensed corpus delivery
+
+- [ ] ২০,০০০+ unique lemma ও ৫০,০০০+ unique sentence-এর source, license, attribution এবং commercial-use permission-এর row-level audit সম্পন্ন করা।
+- [ ] License-clear vocabulary frequency source ও sentence corpus-এর reproducible acquisition manifest তৈরি করা।
+- [ ] Vocabulary ও sentence dataকে normalized, source-attributed import chunksে রূপান্তর করে duplicate, malformed ও unlicensed row প্রত্যাখ্যান করা।
+- [ ] IndexedDB-তে ২০,০০০+ vocabulary ও ৫০,০০০+ sentence record import করে aggregate count এবং source totals যাচাই করা।
+- [ ] Offline cold-start, paginated search, filters, detail lookup, SRS queue এবং bundle size corpus scale-এ পরীক্ষা করা।
+- [ ] GitHub Pages-এ corpus-enabled release deploy করে public count ও attribution handoff যাচাই করা।

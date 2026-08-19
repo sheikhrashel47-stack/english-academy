@@ -5,6 +5,7 @@ import { validateGrammarConcepts, validateSentenceLicense, validateVocabularyLic
 import { importVocabularyPackage, type VocabularyImportReport } from "@/data/content/VocabularyImporter";
 import { phase2Seed } from "@/data/content/phase2Seed";
 import { originalSampleSource, phase3GrammarConcepts, phase3PracticeQuestions, phase3Vocabulary } from "@/data/content/phase3Seed";
+import { productionCorpusManifest, type ProductionCorpusAudit } from "@/data/content/productionCorpus";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
@@ -13,8 +14,11 @@ import type { AppSettings, Attempt, Bookmark, Chapter, FlashcardRating, GrammarC
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase3.1";
+const seedVersion = "phase3.2";
 const timestamp = () => new Date().toISOString();
+const corpusChunkSize = 500;
+
+type ProductionCorpusPackage = { sources: VocabularySource[]; vocabulary: VocabularyItem[]; sentences: VocabularySentence[]; audit: ProductionCorpusAudit };
 
 export type LessonBundle = { lesson: Lesson; vocabulary: VocabularyItem[]; questions: Question[]; progress?: UserLessonProgress; activityProgress: UserActivityProgress[]; bookmarked: boolean; note?: PersonalNote };
 export type UnitBundle = { unit: Unit; level: import("@/domain/learning/types").Level; lessons: Lesson[]; chapters: Chapter[]; unlocked: boolean; completed: boolean };
@@ -24,17 +28,20 @@ export type MistakeBundle = { record: MistakeRecord; question?: Question };
 export type RoadmapItem = { lesson: Lesson; progress?: UserLessonProgress; unlocked: boolean; completed: boolean; unitId: string; levelId: string };
 export type LearningSummary = { totalLessons: number; completedLessons: number; timeSpentSeconds: number; practicedSkills: Skill[]; currentLevel?: import("@/domain/learning/types").Level; nextLesson?: RoadmapItem; completedAssessments: number; totalAssessments: number };
 export type VocabularyReviewQueue = { overdue: VocabularySearchResult["entries"]; dueToday: VocabularySearchResult["entries"]; newItems: VocabularySearchResult["entries"]; learning: VocabularySearchResult["entries"]; review: VocabularySearchResult["entries"]; mastered: VocabularySearchResult["entries"] };
+export type CorpusSnapshot = { vocabulary: number; sentences: number; grammar: number; sources: number; corpusVersion?: string };
 
 const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 4, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
 class LearningRepository {
   async seedIfNeeded(): Promise<void> {
     const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
-    if (settings?.seedVersion === seedVersion) return;
-    await this.persistCurriculum(phase2Seed);
-    await this.persistPhase3Seed();
-    await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
-    logger.debug("seed-loaded", { version: seedVersion });
+    if (settings?.seedVersion !== seedVersion) {
+      await this.persistCurriculum(phase2Seed);
+      await this.persistPhase3Seed();
+      await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
+      logger.debug("seed-loaded", { version: seedVersion });
+    }
+    await this.ensureProductionCorpus();
   }
 
   async importCurriculum(input: unknown): Promise<void> {
@@ -64,7 +71,48 @@ class LearningRepository {
     ]);
   }
 
+  private async ensureProductionCorpus(): Promise<void> {
+    const manifest = productionCorpusManifest;
+    if (!manifest.url) return;
+    const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
+    if (settings?.corpusVersion === manifest.version) return;
+    try {
+      const response = await fetch(manifest.url);
+      if (!response.ok) throw new AppError("ContentError", `Corpus package পাওয়া যায়নি (${response.status})।`);
+      const corpus = await response.json() as ProductionCorpusPackage;
+      this.assertProductionCorpus(corpus, manifest.expected);
+      const sourceMap = new Map(corpus.sources.map((source) => [source.id, source]));
+      corpus.vocabulary.forEach((item) => validateVocabularyLicense(item, sourceMap));
+      corpus.sentences.forEach((sentence) => validateSentenceLicense(sentence, sourceMap));
+      await englishAcademyDb.putMany(stores.vocabularySources, corpus.sources);
+      for (let start = 0; start < corpus.vocabulary.length; start += corpusChunkSize) await englishAcademyDb.putMany(stores.vocabulary, corpus.vocabulary.slice(start, start + corpusChunkSize));
+      for (let start = 0; start < corpus.sentences.length; start += corpusChunkSize) await englishAcademyDb.putMany(stores.sentences, corpus.sentences.slice(start, start + corpusChunkSize));
+      await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, corpusVersion: manifest.version, updatedAt: timestamp() });
+      logger.debug("licensed-corpus-loaded", corpus.audit);
+    } catch (error) {
+      // The curated sample remains usable when an initial offline bootstrap cannot download.
+      logger.warn("licensed-corpus-unavailable", { version: manifest.version, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  private assertProductionCorpus(corpus: ProductionCorpusPackage, expected: ProductionCorpusAudit): void {
+    const audit = corpus.audit;
+    const countsMatch = audit && audit.vocabularyCount === expected.vocabularyCount && audit.sentenceCount === expected.sentenceCount
+      && audit.banglaMeaningCount === expected.banglaMeaningCount && audit.attributedSentenceCount === expected.attributedSentenceCount
+      && audit.linkedSentenceCount >= expected.linkedSentenceCount;
+    if (!countsMatch || corpus.vocabulary.length !== expected.vocabularyCount || corpus.sentences.length !== expected.sentenceCount) {
+      throw new AppError("ContentError", "Corpus audit count manifest-এর সঙ্গে মেলেনি।");
+    }
+  }
+
   async getSettings(): Promise<AppSettings> { await this.seedIfNeeded(); const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId); return { ...defaultSettings(), ...saved, id: settingsId }; }
+  async getCorpusSnapshot(): Promise<CorpusSnapshot> {
+    await this.seedIfNeeded();
+    const [vocabulary, sentences, grammar, sources, settings] = await Promise.all([
+      englishAcademyDb.count(stores.vocabulary), englishAcademyDb.count(stores.sentences), englishAcademyDb.count(stores.grammarConcepts), englishAcademyDb.count(stores.vocabularySources), this.getSettings(),
+    ]);
+    return { vocabulary, sentences, grammar, sources, corpusVersion: settings.corpusVersion };
+  }
   async updateSettings(patch: Partial<Omit<AppSettings, "id" | "schemaVersion" | "updatedAt">>): Promise<AppSettings> { const current = await this.getSettings(); const next = { ...current, ...patch, updatedAt: timestamp() }; await englishAcademyDb.put(stores.settings, next); return next; }
 
   private async getCurriculum() {
@@ -219,7 +267,9 @@ class LearningRepository {
       const existing = await Promise.all(chunk.map((item) => englishAcademyDb.getByIndex<VocabularyItem>(stores.vocabulary, "lemma", item.lemma!)));
       chunk.forEach((item, index) => { if (existing[index].length) { batch.report.duplicates += 1; batch.report.skipped += 1; batch.report.imported -= 1; } else uniqueItems.push(item); });
     }
-    await Promise.all([...batch.sources.map((source) => englishAcademyDb.put(stores.vocabularySources, source)), ...uniqueItems.map((item) => englishAcademyDb.put(stores.vocabulary, item)), ...batch.sentences.map((sentence) => englishAcademyDb.put(stores.sentences, sentence))]);
+    await englishAcademyDb.putMany(stores.vocabularySources, batch.sources);
+    for (let start = 0; start < uniqueItems.length; start += corpusChunkSize) await englishAcademyDb.putMany(stores.vocabulary, uniqueItems.slice(start, start + corpusChunkSize));
+    for (let start = 0; start < batch.sentences.length; start += corpusChunkSize) await englishAcademyDb.putMany(stores.sentences, batch.sentences.slice(start, start + corpusChunkSize));
     return batch.report;
   }
 

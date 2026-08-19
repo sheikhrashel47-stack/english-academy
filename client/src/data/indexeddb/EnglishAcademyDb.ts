@@ -112,6 +112,19 @@ class EnglishAcademyDb {
     });
   }
   async put<T>(store: StoreName, value: T): Promise<void> { await this.run<IDBValidKey>(store, "readwrite", (objectStore) => objectStore.put(value)); }
+  async putMany<T>(store: StoreName, values: T[]): Promise<void> {
+    if (!values.length) return;
+    const db = await this.open();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = db.transaction(store, "readwrite");
+      const objectStore = transaction.objectStore(store);
+      for (const value of values) objectStore.put(value);
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(new AppError("StorageError", "লোকাল তথ্যের একটি batch সংরক্ষণ করা যায়নি।", transaction.error));
+      transaction.onabort = () => reject(new AppError("StorageError", "লোকাল তথ্যের batch সংরক্ষণ বাতিল হয়েছে।", transaction.error));
+    });
+  }
+  async count(store: StoreName): Promise<number> { return this.run<number>(store, "readonly", (objectStore) => objectStore.count()); }
   async delete(store: StoreName, key: IDBValidKey): Promise<void> { await this.run<undefined>(store, "readwrite", (objectStore) => objectStore.delete(key)); }
   async clear(store: StoreName): Promise<void> { await this.run<undefined>(store, "readwrite", (objectStore) => objectStore.clear()); }
 

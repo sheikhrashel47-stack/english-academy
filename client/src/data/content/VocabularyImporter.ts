@@ -86,7 +86,9 @@ function normalizeVocabulary(row: RawRow, source: VocabularySource): VocabularyI
 
 function normalizeSentence(row: RawRow, sources: Map<string, VocabularySource>): VocabularySentence | undefined {
   const source = sources.get(text(row.sourceId)); const content = text(row.text); if (!source || !content || !source.commercialUseAllowed) return undefined;
-  return { id: text(row.id) || `sentence-${crypto.randomUUID()}`, schemaVersion: 5, createdAt: now(), updatedAt: now(), vocabularyId: text(row.vocabularyId) || undefined, text: content, banglaTranslation: text(row.banglaTranslation) || undefined, language: "en", sourceId: source.id, license: source.license, licenseUrl: source.licenseUrl, commercialUseAllowed: source.commercialUseAllowed, attribution: source.attribution };
+  const attribution = text(row.attribution) || source.attribution;
+  if (!attribution) return undefined;
+  return { id: text(row.id) || `sentence-${crypto.randomUUID()}`, schemaVersion: 5, createdAt: now(), updatedAt: now(), vocabularyId: text(row.vocabularyId) || undefined, text: content, banglaTranslation: text(row.banglaTranslation) || undefined, language: "en", sourceId: source.id, license: source.license, licenseUrl: source.licenseUrl, commercialUseAllowed: source.commercialUseAllowed, attribution };
 }
 
 /** Rejects rows with unknown or non-commercial rights before any persistence is attempted. */

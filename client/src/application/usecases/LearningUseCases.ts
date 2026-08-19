@@ -14,6 +14,7 @@ export const learningUseCases = {
   searchVocabulary: (filters?: Parameters<typeof learningRepository.searchVocabulary>[0]) => learningRepository.searchVocabulary(filters),
   getVocabularyDetail: (vocabularyId: string) => learningRepository.getVocabularyDetail(vocabularyId),
   getVocabularyReviewQueue: () => learningRepository.getVocabularyReviewQueue(),
+  getCorpusSnapshot: () => learningRepository.getCorpusSnapshot(),
   getSrsCard: (vocabularyId: string) => learningRepository.getSrsCard(vocabularyId),
   updateVocabularyMastery: (vocabularyId: string, state: Parameters<typeof learningRepository.updateVocabularyMastery>[1]) => learningRepository.updateVocabularyMastery(vocabularyId, state),
   importVocabularyBatch: (data: unknown) => learningRepository.importVocabularyBatch(data),

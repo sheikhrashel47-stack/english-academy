@@ -74,3 +74,6 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - **Color discipline:** Academy Emerald `#146B4D` and soft mint are the only brand accents; copper, maroon, orange, purple and decorative warm stamps are excluded except for true semantic warning/error states.
 - **Bilingual hierarchy:** English target content leads at display scale, while Bangla guides and reassures in a calmer secondary line; equal-weight mixed-language display headlines are avoided unless the learning task requires both.
 - **Signature motif rule:** Every major learning screen carries one understated Academy motif—an Emerald focus line, learning-ledger row or CEFR/progress ribbon—so the workspace is recognisably English Academy rather than a generic education UI.
+- Every library, study-note and corpus-control screen places one factual learning structure close to its main action: a CEFR context line, learning-ledger row, mastery cue or provenance register.
+- English names the learning object; Bangla supplies the supporting instruction. Mixed-language display copy is only used where it improves comprehension of the task.
+- Empty and developer-only views present the next safe action and a quiet provenance or study-status note rather than a generic placeholder.
