@@ -24,8 +24,12 @@ Library resources and search tokens are seeded into IndexedDB v10. Saved resourc
 | Automated regression | Passed: 11 test files, 30 tests (`pnpm test`) |
 | GitHub Pages packaging | Passed (`GITHUB_ACTIONS=true pnpm build`) |
 | Interface review | Desktop and 375px mobile inspections completed after the applied reference-ledger refinement |
-| GitHub Pages publication | Pending final release checkpoint and authenticated workflow |
+| GitHub Pages publication | Initial artifact deployed successfully; corrected startup build is ready for republishing and final fresh-route verification |
 
 ## Interface Review Record
 
 The final visual pass strengthened the **English Academy reference ledger** rather than introducing a separate catalogue aesthetic. Library cards now foreground the English learning object, then a calmer Bangla explanation, Academy Emerald focus edge, CEFR/time evidence and original-local provenance. The hub, saved list and detail reader each present a factual next action before secondary browsing; detail records also show a concise CEFR/provenance ledger. The Academy sidebar wordmark was refined into a compact editorial lockup to better match the reference workspace.
+
+## Publication Verification Note
+
+The initial Phase 8 GitHub Pages artifact deployment completed successfully, but a fresh production visit to `/library` remained at the local-index loading state. The local seed/read chain was diagnosed and corrected: the migration now avoids replaying the existing 20,000+ licensed vocabulary records, and a fresh development session completed the Phase 8 seed and rendered all 21 reference resources. The corrected commit is pending GitHub Pages republication and one final fresh-route verification.

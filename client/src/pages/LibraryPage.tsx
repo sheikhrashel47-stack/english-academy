@@ -20,23 +20,44 @@ function ResourceCard({ item, saved, onToggle }: { item: LibraryResource | Libra
 export default function LibraryPage() {
   const [savedRoute] = useRoute("/library/saved"); const isSavedView = Boolean(savedRoute);
   const [categories, setCategories] = useState<LibraryCategory[]>([]); const [resources, setResources] = useState<LibraryResource[]>([]); const [savedIds, setSavedIds] = useState<Set<string>>(new Set()); const [history, setHistory] = useState<LibrarySearchHistory[]>([]); const [recent, setRecent] = useState<Array<{ resource: LibraryResource; activity: LibraryActivity }>>([]);
-  const [categoryId, setCategoryId] = useState("all"); const [level, setLevel] = useState<LevelCode | "all">("all"); const [query, setQuery] = useState(""); const [submittedQuery, setSubmittedQuery] = useState(""); const [searchHits, setSearchHits] = useState<LibrarySearchHit[] | null>(null); const [loading, setLoading] = useState(true);
+  const [categoryId, setCategoryId] = useState("all"); const [level, setLevel] = useState<LevelCode | "all">("all"); const [query, setQuery] = useState(""); const [submittedQuery, setSubmittedQuery] = useState(""); const [searchHits, setSearchHits] = useState<LibrarySearchHit[] | null>(null); const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState("");
   const visibleItems = useMemo(() => searchHits ?? resources, [resources, searchHits]);
   const refresh = async () => {
-    setLoading(true);
-    const [nextCategories, library, saved, recentSearches, recentResources] = await Promise.all([
-      learningUseCases.getLibraryCategories(),
-      isSavedView ? Promise.resolve(undefined) : learningUseCases.getLibraryResources({ categoryId: categoryId === "all" ? undefined : categoryId, level: level === "all" ? undefined : level, pageSize: 48 }),
-      learningUseCases.getLibrarySavedResources(), learningUseCases.getLibrarySearchHistory(), learningUseCases.getRecentLibraryResources(),
-    ]);
-    const savedFiltered = saved.filter((item) => (categoryId === "all" || item.categoryId === categoryId) && (level === "all" || item.level === level));
-    setCategories(nextCategories); setResources(isSavedView ? savedFiltered : library?.items ?? []); setSavedIds(new Set(saved.map((item) => item.id))); setHistory(recentSearches); setRecent(recentResources); setLoading(false);
+    setLoading(true); setLoadError("");
+    try {
+      const [nextCategories, primary] = await Promise.all([
+        learningUseCases.getLibraryCategories(),
+        isSavedView
+          ? learningUseCases.getLibrarySavedResources()
+          : learningUseCases.getLibraryResources({ categoryId: categoryId === "all" ? undefined : categoryId, level: level === "all" ? undefined : level, pageSize: 48 }),
+      ]);
+      const primaryResources = isSavedView
+        ? primary as LibraryResource[]
+        : (primary as Awaited<ReturnType<typeof learningUseCases.getLibraryResources>>).items;
+      const filteredResources = primaryResources.filter((item) => (categoryId === "all" || item.categoryId === categoryId) && (level === "all" || item.level === level));
+      setCategories(nextCategories); setResources(filteredResources); if (isSavedView) setSavedIds(new Set(filteredResources.map((item) => item.id))); setLoading(false);
+
+      void Promise.allSettled([
+        isSavedView ? Promise.resolve(filteredResources) : learningUseCases.getLibrarySavedResources(),
+        learningUseCases.getLibrarySearchHistory(),
+        learningUseCases.getRecentLibraryResources(),
+      ]).then(([savedResult, historyResult, recentResult]) => {
+        if (savedResult.status === "fulfilled") setSavedIds(new Set(savedResult.value.map((item) => item.id)));
+        if (historyResult.status === "fulfilled") setHistory(historyResult.value);
+        if (recentResult.status === "fulfilled") setRecent(recentResult.value);
+      });
+    } catch {
+      setLoadError("Local reference index এখন পড়া যাচ্ছে না। আবার চেষ্টা করুন।"); setLoading(false);
+    }
   };
   useEffect(() => { void refresh(); }, [categoryId, isSavedView, level]);
   const submitSearch = async (event?: FormEvent) => {
     event?.preventDefault(); const value = query.trim(); setSubmittedQuery(value);
     if (!value) { setSearchHits(null); return; }
-    setLoading(true); const result = await learningUseCases.searchLibrary({ query: value, level: level === "all" ? undefined : level, pageSize: 36 }); setSearchHits(result.hits); setHistory(await learningUseCases.getLibrarySearchHistory()); setLoading(false);
+    setLoading(true); setLoadError("");
+    try { const result = await learningUseCases.searchLibrary({ query: value, level: level === "all" ? undefined : level, pageSize: 36 }); setSearchHits(result.hits); setHistory(await learningUseCases.getLibrarySearchHistory()); }
+    catch { setLoadError("এই local searchটি এখন চালানো যাচ্ছে না।"); }
+    finally { setLoading(false); }
   };
   const toggleSaved = async (id: string) => { const saved = await learningUseCases.toggleBookmark(id, "library"); setSavedIds((current) => { const next = new Set(current); saved ? next.add(id) : next.delete(id); return next; }); };
   return <AppShell eyebrow="English Library" title={isSavedView ? "Saved reference desk" : "English reference desk"}>
@@ -46,7 +67,7 @@ export default function LibraryPage() {
     </section>
     <section className="library-search-panel paper-card" aria-label="Library search and filters">
       <p className="library-search-prompt">Search one English question</p><form onSubmit={submitSearch}><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search: present simple, at on in, look after…" aria-label="Search the English Library"/><button type="submit">খুঁজুন</button></form>
-      <div className="library-filter-row"><label>স্তর<select value={level} onChange={(event) => { setLevel(event.target.value as LevelCode | "all"); setSearchHits(null); }} >{levels.map((item) => <option value={item} key={item}>{item === "all" ? "সব level" : item}</option>)}</select></label><button type="button" className={searchHits ? "library-clear-search" : "library-clear-search is-hidden"} onClick={() => { setQuery(""); setSubmittedQuery(""); setSearchHits(null); }}>Browse mode</button><span>{loading ? "Local index পড়া হচ্ছে…" : `${visibleItems.length}টি reference`}</span></div>
+      <div className="library-filter-row"><label>স্তর<select value={level} onChange={(event) => { setLevel(event.target.value as LevelCode | "all"); setSearchHits(null); }} >{levels.map((item) => <option value={item} key={item}>{item === "all" ? "সব level" : item}</option>)}</select></label><button type="button" className={searchHits ? "library-clear-search" : "library-clear-search is-hidden"} onClick={() => { setQuery(""); setSubmittedQuery(""); setSearchHits(null); }}>Browse mode</button><span>{loading ? "Local index পড়া হচ্ছে…" : loadError || `${visibleItems.length}টি reference`}</span>{loadError && <button type="button" className="library-clear-search" onClick={() => void refresh()}>আবার চেষ্টা করুন</button>}</div>
       {history.length > 0 && <div className="library-history" aria-label="Recent local searches"><small>Recent local searches</small>{history.map((item) => <button key={item.id} type="button" onClick={() => { setQuery(item.query); void (async () => { const result = await learningUseCases.searchLibrary({ query: item.query, level: level === "all" ? undefined : level }); setSubmittedQuery(item.query); setSearchHits(result.hits); })(); }}>{item.query}</button>)}</div>}
     </section>
     <section className="library-category-rail" aria-label="Library categories"><button type="button" onClick={() => { setCategoryId("all"); setSearchHits(null); }} className={categoryId === "all" ? "library-category-chip active" : "library-category-chip"}>সব বিষয়</button>{categories.map((category) => <button key={category.id} type="button" onClick={() => { setCategoryId(category.id); setSearchHits(null); }} className={categoryId === category.id ? "library-category-chip active" : "library-category-chip"}><b>{category.banglaTitle}</b><small>{category.title}</small></button>)}</section>

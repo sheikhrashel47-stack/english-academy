@@ -100,8 +100,8 @@ class LearningRepository {
   }
 
   private async persistPhase3Seed(): Promise<void> {
-    const curriculumVocabulary = await englishAcademyDb.getAll<VocabularyItem>(stores.vocabulary);
-    const enrichedCurriculumVocabulary = curriculumVocabulary.map((item) => item.sourceId ? item : { ...item, schemaVersion: 5, lemma: item.word.toLocaleLowerCase("en-US"), sourceId: originalSampleSource.id, license: "MIT" as const, licenseUrl: originalSampleSource.licenseUrl, commercialUseAllowed: true, attribution: originalSampleSource.attribution });
+    const curriculumVocabulary = (await englishAcademyDb.getAll<VocabularyItem>(stores.vocabulary)).filter((item) => !item.sourceId);
+    const enrichedCurriculumVocabulary = curriculumVocabulary.map((item) => ({ ...item, schemaVersion: 5, lemma: item.word.toLocaleLowerCase("en-US"), sourceId: originalSampleSource.id, license: "MIT" as const, licenseUrl: originalSampleSource.licenseUrl, commercialUseAllowed: true, attribution: originalSampleSource.attribution }));
     await Promise.all([
       englishAcademyDb.put(stores.vocabularySources, originalSampleSource),
       ...enrichedCurriculumVocabulary.map((item) => englishAcademyDb.put(stores.vocabulary, item)),
