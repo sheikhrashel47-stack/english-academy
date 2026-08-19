@@ -1,38 +1,52 @@
+/**
+ * Design reminder — “ভাষার মানচিত্র”: every route has a clear return path through
+ * the compass shell; calm learning continuity is more important than route novelty.
+ */
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
-
+import { initializeLearningApp } from "@/app/bootstrap/initializeLearningApp";
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const LessonPage = lazy(() => import("@/pages/LessonPage"));
+const VocabularyPage = lazy(() => import("@/pages/VocabularyPage"));
+const ProgressPage = lazy(() => import("@/pages/ProgressPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const CoursePage = lazy(() => import("@/pages/CoursePage"));
+const PracticePage = lazy(() => import("@/pages/PracticePage"));
 
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
+      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/course/:courseId" component={CoursePage} />
+      <Route path="/lesson/:lessonId" component={LessonPage} />
+      <Route path="/vocabulary" component={VocabularyPage} />
+      <Route path="/practice" component={PracticePage} />
+      <Route path="/progress" component={ProgressPage} />
+      <Route path="/settings" component={SettingsPage} />
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
+function Bootstrap() {
+  useEffect(() => { void initializeLearningApp(); }, []);
+  return <Suspense fallback={<div className="route-loading">পথটি খোলা হচ্ছে…</div>}><Router /></Suspense>;
+}
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light" switchable>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <Bootstrap />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

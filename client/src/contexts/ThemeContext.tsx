@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-type Theme = "light" | "dark";
+export type Theme = "light" | "dark" | "focus";
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme?: () => void;
+  setTheme?: (theme: Theme) => void;
   switchable: boolean;
 }
 
@@ -36,6 +37,7 @@ export function ThemeProvider({
     } else {
       root.classList.remove("dark");
     }
+    root.classList.toggle("focus", theme === "focus");
 
     if (switchable) {
       localStorage.setItem("theme", theme);
@@ -49,7 +51,7 @@ export function ThemeProvider({
     : undefined;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme: switchable ? setTheme : undefined, switchable }}>
       {children}
     </ThemeContext.Provider>
   );
