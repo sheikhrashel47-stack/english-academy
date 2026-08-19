@@ -59,4 +59,4 @@
 - [x] Level, unit, chapter, lesson এবং visual learning-path routes ও responsive pages তৈরি করা।
 - [x] Activity/block renderer-এ specified interaction families ও per-block persistence যোগ করা।
 - [x] Resume, continue-learning, real-progress aggregation, assessment feedback ও mistake/review integration সম্পন্ন করা।
-- [ ] Domain tests, production build, GitHub Pages deep links ও offline-safe fallback যাচাই করে publish করা।
+- [x] Domain tests, production build, GitHub Pages deep links ও offline-safe fallback যাচাই করে publish করা।
