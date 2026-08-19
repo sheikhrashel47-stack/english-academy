@@ -9,7 +9,7 @@
 - [x] PWA foundation ও GitHub Pages Actions workflow যোগ করা।
 - [x] Type check, automated test, production build, mobile screenshot এবং persisted workflow যাচাই করা।
 - [x] Clean Git commit ও GitHub push সম্পন্ন করা।
-- [ ] Checkpoint তৈরি করে Phase 1 ফলাফল জানানো।
+- [x] Checkpoint তৈরি করে Phase 1 ফলাফল জানানো।
 
 ## GitHub Pages publication
 
@@ -37,7 +37,7 @@
 - [x] Desktop sidebar, five-item mobile bottom navigation এবং grouped primary destinations পুনর্গঠন করা।
 - [x] Dashboard, learning map, course, lesson, practice, vocabulary, progress, tools ও settings-এর coherent initial UI shell implement করা।
 - [x] Responsive, keyboard, reduced-motion, empty/loading/error-state এবং production build validation সম্পন্ন করা।
-- [ ] নতুন design-system UI shell-এর checkpoint ও GitHub Pages deployment যাচাই করা।
+- [x] নতুন design-system UI shell-এর checkpoint ও GitHub Pages deployment যাচাই করা।
 
 ## Phase 1 functional-foundation reconciliation
 
@@ -48,4 +48,4 @@
 - [x] Functional Skills hub, listening, pronunciation, speaking-record UI এবং writing draft editor তৈরি করা।
 - [x] Reusable audio player ও graceful unavailable-audio state যুক্ত করা।
 - [x] Vocabulary detail/flashcard, mistake-review ও truthful coming-soon states সম্পন্ন করা।
-- [ ] End-to-end flows, local persistence, accessibility, tests, build ও GitHub Pages publication যাচাই করা।
+- [x] End-to-end flows, local persistence, accessibility, tests, build ও GitHub Pages publication যাচাই করা।
