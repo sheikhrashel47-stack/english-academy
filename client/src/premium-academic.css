@@ -642,3 +642,72 @@ body, body * { font-family: "Manrope", "Noto Sans Bengali", ui-sans-serif, syste
 @keyframes recordingPulse { 50% { opacity: .35; } }
 @media (max-width: 760px) { .language-mode-grid, .skill-lab-grid, .word-detail-grid, .roleplay-layout { grid-template-columns: 1fr; } .skill-lab-intro { align-items: flex-start; } .flashcard { min-height: 260px; } .global-search-trigger span, .global-search-trigger kbd { display: none; } }
 @media (max-width: 500px) { .daily-goal-row, .word-detail-heading, .writing-toolbar, .coach-console form { align-items: flex-start; flex-direction: column; } .writing-toolbar > div { width: 100%; } .writing-toolbar > div button { flex: 1; } .flashcard-actions, .roleplay-cards { display: grid; grid-template-columns: repeat(2, 1fr); width: 100%; } .flashcard-actions button { width: 100%; } .coach-console input { width: 100%; } }
+
+/* Phase 2 design reminder — a CEFR curriculum is an academic sequence, not a game board. */
+.learning-path-hero, .level-study-hero, .chapter-hero { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: clamp(22px, 4vw, 40px); margin-bottom: 18px; overflow: hidden; background: linear-gradient(125deg, var(--academy-surface), color-mix(in srgb, var(--academy-mint) 50%, var(--academy-surface))); border-left: 4px solid var(--academy-emerald); }
+.learning-path-hero > svg, .chapter-hero > svg { flex: 0 0 auto; color: var(--academy-emerald); opacity: .8; }
+.learning-path-hero h2, .level-study-hero h2, .chapter-hero h2 { max-width: 760px; margin: 7px 0 9px; color: var(--academy-ink); font-size: clamp(24px, 3.4vw, 40px); font-weight: 800; letter-spacing: -.05em; line-height: 1.13; }
+.learning-path-hero h2 em { color: var(--academy-emerald); font-style: normal; }
+.learning-path-hero p:not(.card-kicker), .level-study-hero p:not(.card-kicker), .chapter-hero p:not(.card-kicker) { max-width: 720px; margin: 0; color: var(--academy-ink-muted); }
+.cefr-path-list, .level-unit-list, .chapter-lesson-list { display: grid; gap: 11px; }
+.cefr-path-card, .level-unit-card, .chapter-lesson-list > article { display: grid; align-items: center; gap: 16px; padding: 18px 20px; color: var(--academy-ink); background: var(--academy-surface); border: 1px solid var(--academy-border); border-radius: 12px; box-shadow: var(--academy-shadow-sm); }
+.cefr-path-card { grid-template-columns: 42px minmax(0, 1fr) auto; }
+.level-unit-card { grid-template-columns: 42px minmax(0, 1fr) auto; }
+.chapter-lesson-list > article { grid-template-columns: 42px minmax(0, 1fr) auto; }
+.cefr-path-marker, .unit-index, .chapter-lesson-list > article > span { display: grid; width: 38px; height: 38px; place-items: center; color: var(--academy-emerald); background: var(--academy-mint); border: 1px solid color-mix(in srgb, var(--academy-emerald) 22%, var(--academy-border)); border-radius: 10px; font-size: 12px; font-weight: 850; }
+.cefr-path-copy { display: grid; gap: 3px; }
+.cefr-path-copy p, .level-unit-card p, .chapter-lesson-list > article p { margin: 0; color: var(--academy-emerald); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.cefr-path-copy h2, .level-unit-card h2, .chapter-lesson-list > article h2 { margin: 0; color: var(--academy-ink); font-size: 18px; font-weight: 800; letter-spacing: -.025em; }
+.cefr-path-copy span, .level-unit-card span, .chapter-lesson-list > article small { color: var(--academy-ink-muted); font-size: 12px; line-height: 1.55; }
+.cefr-path-copy small { margin-top: 3px; color: var(--academy-ink-muted); font-size: 10px; font-weight: 750; }
+.cefr-path-card.is-open, .level-unit-card.is-open { border-color: color-mix(in srgb, var(--academy-emerald) 40%, var(--academy-border)); }
+.cefr-path-card.is-complete .cefr-path-marker, .level-unit-card .unit-index:has(svg) { color: #fff; background: var(--academy-success); border-color: var(--academy-success); }
+.cefr-path-card.is-locked, .level-unit-card.is-locked { background: var(--academy-surface-raised); opacity: .76; }
+.locked-note { display: inline-flex; align-items: center; gap: 6px; color: var(--academy-ink-muted); font-size: 11px; font-weight: 750; text-align: right; }
+.chapter-hero { justify-content: flex-start; }
+.chapter-hero > div { min-width: 0; }
+@media (max-width: 760px) { .learning-path-hero, .level-study-hero, .chapter-hero { align-items: flex-start; } .cefr-path-card, .level-unit-card, .chapter-lesson-list > article { grid-template-columns: 38px minmax(0, 1fr); } .cefr-path-card > .lesson-link, .level-unit-card > .lesson-link, .cefr-path-card > .locked-note, .level-unit-card > .locked-note, .chapter-lesson-list > article > .lesson-link { grid-column: 2; justify-self: start; padding-top: 2px; } }
+@media (max-width: 500px) { .learning-path-hero > svg { display: none; } .cefr-path-card, .level-unit-card, .chapter-lesson-list > article { gap: 12px; padding: 15px; } .learning-path-hero h2, .level-study-hero h2, .chapter-hero h2 { font-size: 25px; } }
+
+/* Phase 2 review refinement — CEFR ribbon and study ledgers give every route one institutional rhythm. */
+.brand-type { gap: 1px; }
+.brand-type strong { font-size: 15px; letter-spacing: -.045em; }
+.brand-type em { color: var(--academy-emerald); font-family: "Noto Sans Bengali", "Manrope", sans-serif; font-size: 9px; font-style: normal; font-weight: 750; line-height: 1.25; }
+.brand-type small { margin-top: 2px; color: var(--academy-ink-muted); font-size: 7px; font-weight: 850; letter-spacing: .12em; }
+.cefr-ribbon { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; margin: 0 0 18px; padding: 4px; background: var(--academy-surface-raised); border: 1px solid var(--academy-border); border-radius: 12px; }
+.cefr-ribbon-segment { display: grid; min-height: 62px; align-content: center; gap: 2px; padding: 9px 11px; color: var(--academy-ink-muted); border-left: 2px solid var(--academy-border); text-decoration: none; }
+.cefr-ribbon-segment:first-child { border-left: 0; }
+.cefr-ribbon-segment strong { font-size: 13px; font-weight: 850; letter-spacing: -.025em; }
+.cefr-ribbon-segment small { font-size: 9px; font-weight: 750; line-height: 1.2; }
+.cefr-ribbon-current { color: #fff; background: var(--academy-emerald); border-left-color: var(--academy-emerald); border-radius: 8px; }
+.cefr-ribbon-complete { color: var(--academy-emerald-strong); background: var(--academy-mint); border-left-color: var(--academy-mint); }
+.cefr-ribbon-future { background: color-mix(in srgb, var(--academy-surface) 75%, var(--academy-surface-raised)); }
+.study-next-action { display: flex; align-items: center; justify-content: space-between; gap: 22px; margin: 0 0 24px; padding: 20px 22px; background: var(--academy-ink); border-left: 4px solid var(--academy-emerald); box-shadow: var(--academy-shadow-sm); }
+.study-next-action > div { min-width: 0; }
+.study-next-action .card-kicker { color: #a5dfbd; }
+.study-next-action h2 { margin: 3px 0 5px; color: #fff; font-size: clamp(20px, 2.5vw, 28px); font-weight: 800; letter-spacing: -.04em; }
+.study-next-action p:not(.card-kicker) { margin: 0; color: #d8eee0; font-size: 12px; line-height: 1.5; }
+.study-next-action .lesson-link { flex: 0 0 auto; color: var(--academy-emerald-strong); background: #fff; border-color: #fff; }
+.learning-ledger-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 22px 0 11px; padding: 0 0 10px 14px; border-bottom: 1px solid var(--academy-border); border-left: 2px solid var(--academy-emerald); }
+.learning-ledger-heading .card-kicker { margin: 0; }
+.learning-ledger-heading h2 { margin: 3px 0 0; color: var(--academy-ink); font-size: 18px; font-weight: 800; letter-spacing: -.03em; }
+.learning-ledger-heading > span { color: var(--academy-ink-muted); font-size: 10px; font-weight: 800; }
+.unit-study-hero { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 18px; padding: 24px; background: linear-gradient(125deg, var(--academy-surface), color-mix(in srgb, var(--academy-mint) 45%, var(--academy-surface))); border-left: 4px solid var(--academy-emerald); }
+.unit-study-hero svg { flex: 0 0 auto; color: var(--academy-emerald); }
+.unit-study-hero h2 { margin: 4px 0 5px; color: var(--academy-ink); font-size: clamp(21px, 3vw, 31px); font-weight: 800; letter-spacing: -.04em; }
+.unit-study-hero p:not(.card-kicker) { margin: 0; color: var(--academy-ink-muted); }
+.unit-chapter-ledger { margin: 0 0 6px; }
+.unit-chapter-strip { display: flex; flex-wrap: wrap; gap: 8px; }
+.unit-chapter-strip > p { width: 100%; margin: 0; color: var(--academy-ink-muted); font-size: 10px; font-weight: 800; }
+.unit-chapter-strip a { display: inline-flex; align-items: center; gap: 7px; padding: 9px 11px; color: var(--academy-emerald-strong); background: var(--academy-mint); border: 1px solid color-mix(in srgb, var(--academy-emerald) 18%, var(--academy-border)); border-radius: 8px; font-size: 11px; font-weight: 800; text-decoration: none; }
+.unit-study-list { display: grid; gap: 10px; }
+.unit-study-list > article { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 17px 19px; color: var(--academy-ink); background: var(--academy-surface); border: 1px solid var(--academy-border); border-radius: 12px; box-shadow: var(--academy-shadow-sm); }
+.unit-study-list > article.is-locked { background: var(--academy-surface-raised); opacity: .75; }
+.unit-study-number { display: grid; width: 38px; height: 38px; place-items: center; color: var(--academy-emerald); background: var(--academy-mint); border: 1px solid color-mix(in srgb, var(--academy-emerald) 22%, var(--academy-border)); border-radius: 10px; font-size: 12px; font-weight: 850; }
+.unit-study-list p { margin: 0; color: var(--academy-emerald); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.unit-study-list h2 { margin: 3px 0; color: var(--academy-ink); font-size: 18px; font-weight: 800; letter-spacing: -.025em; }
+.unit-study-list span:not(.unit-study-number) { color: var(--academy-ink-muted); font-size: 12px; }
+.unit-objective-note { display: flex; align-items: center; gap: 9px; margin-top: 16px; padding: 12px 14px; color: var(--academy-ink-muted); background: var(--academy-surface-raised); border-left: 2px solid var(--academy-emerald); font-size: 11px; }
+.unit-objective-note svg { color: var(--academy-emerald); }
+@media (max-width: 760px) { .cefr-ribbon { grid-template-columns: repeat(3, 1fr); } .cefr-ribbon-segment:nth-child(4) { border-left: 0; } .study-next-action { align-items: flex-start; flex-direction: column; } .unit-study-list > article { grid-template-columns: 38px minmax(0, 1fr); } .unit-study-list > article > .lesson-link, .unit-study-list > article > .locked-note { grid-column: 2; justify-self: start; } }
+@media (max-width: 500px) { .cefr-ribbon { grid-template-columns: repeat(2, 1fr); } .cefr-ribbon-segment:nth-child(odd) { border-left: 0; } .study-next-action { padding: 18px; } .learning-ledger-heading { align-items: flex-start; flex-direction: column; gap: 5px; } .unit-study-list > article { gap: 12px; padding: 15px; } }

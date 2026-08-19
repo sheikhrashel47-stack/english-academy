@@ -49,3 +49,14 @@
 - [x] Reusable audio player ও graceful unavailable-audio state যুক্ত করা।
 - [x] Vocabulary detail/flashcard, mistake-review ও truthful coming-soon states সম্পন্ন করা।
 - [x] End-to-end flows, local persistence, accessibility, tests, build ও GitHub Pages publication যাচাই করা।
+
+## Phase 2 complete learning and course engine
+
+- [x] সংযুক্ত Phase 2 specification-এর পূর্ণ hierarchy, block-type এবং progress requirements বর্তমান contracts-এর সঙ্গে reconcile করা।
+- [x] Academy → CEFR level → course → unit → optional chapter → lesson → block/activity/assessment domain model ও IndexedDB migration তৈরি করা।
+- [x] Sample Pre-A1 থেকে C2 curriculum catalogue, CEFR objectives এবং extensible topic/skill mappings যোগ করা।
+- [x] Configurable completion, mastery, prerequisite, unlock, skip/test-out ও review policy engine বাস্তবায়ন করা।
+- [x] Level, unit, chapter, lesson এবং visual learning-path routes ও responsive pages তৈরি করা।
+- [x] Activity/block renderer-এ specified interaction families ও per-block persistence যোগ করা।
+- [x] Resume, continue-learning, real-progress aggregation, assessment feedback ও mistake/review integration সম্পন্ন করা।
+- [ ] Domain tests, production build, GitHub Pages deep links ও offline-safe fallback যাচাই করে publish করা।

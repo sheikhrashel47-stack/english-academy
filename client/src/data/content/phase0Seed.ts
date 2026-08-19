@@ -109,5 +109,6 @@ export const phase0Seed: LearningSeed = {
     { ...base, id: "unit-a2-time", levelId: "level-a2", title: "Time & stories", summary: "গতকালের ঘটনা বলা।", lessonIds: ["lesson-a2-past"], order: 1 },
     { ...base, id: "unit-a2-reading", levelId: "level-a2", title: "Read & review", summary: "ছোট লেখা বোঝা ও পুনরাবৃত্তি।", lessonIds: ["lesson-a2-reading", "lesson-a2-review"], order: 2 },
   ],
+  chapters: [],
   lessons, vocabulary, questions, grammarTopics,
 };

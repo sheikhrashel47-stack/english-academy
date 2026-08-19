@@ -1,18 +1,16 @@
-/** Design reminder — “ভাষার মানচিত্র”: a unit is a short route segment, not a generic card grid. */
-import { ArrowRight, Compass, MapPin } from "lucide-react";
+/** Design reminder — “Emerald Study House”: a unit is a focused academic module with a simple, lock-aware sequence. */
+import { ArrowRight, BookOpenCheck, LockKeyhole, Route } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useRoute } from "wouter";
+import { Link, useLocation } from "wouter";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
 import { AppShell } from "@/components/app/AppShell";
-import type { Lesson, Level, Unit } from "@/domain/learning/types";
+
+type UnitBundle = Awaited<ReturnType<typeof learningUseCases.getUnit>>;
 
 export default function UnitPage() {
-  const [, params] = useRoute("/unit/:unitId");
-  const [bundle, setBundle] = useState<{ unit: Unit; level: Level; lessons: Lesson[] }>();
-  useEffect(() => { if (params?.unitId) void learningUseCases.getUnit(params.unitId).then(setBundle); }, [params?.unitId]);
-  if (!bundle) return <AppShell eyebrow="Unit" title="পথটি খোলা হচ্ছে…"><div className="route-loading">Learning trail সাজানো হচ্ছে…</div></AppShell>;
-  return <AppShell eyebrow={`${bundle.level.code} · Unit ${bundle.unit.order}`} title={bundle.unit.title}>
-    <section className="unit-hero paper-card map-contour"><div><p className="card-kicker"><Compass size={15} /> শেখার segment</p><h2>{bundle.unit.summary}</h2><p>এই unit-এ {bundle.lessons.length}টি landmark আছে। প্রতিটি lesson শেষ হলে পরের চিহ্নটি আরও পরিষ্কার হবে।</p></div><span className="unit-hero-stamp">{bundle.level.code}</span></section>
-    <section className="unit-route" aria-label="unit lessons">{bundle.lessons.map((lesson, index) => <article className="unit-route-item" key={lesson.id}><span className="route-pin"><MapPin size={17} /></span><div><p>Landmark {String(index + 1).padStart(2, "0")} · {lesson.estimatedMinutes} মিনিট</p><h2>{lesson.banglaTitle}</h2><span>{lesson.objectives[0]}</span></div><Link href={`/lesson/${lesson.id}`} className="lesson-link">খুলো <ArrowRight size={16} /></Link></article>)}</section>
-  </AppShell>;
+  const [location] = useLocation(); const unitId = location.match(/\/(?:learn\/)?unit\/([^/?#]+)/)?.[1]; const [bundle, setBundle] = useState<UnitBundle>();
+  useEffect(() => { if (unitId) void learningUseCases.getUnit(unitId).then(setBundle); }, [unitId]);
+  if (!bundle) return <AppShell eyebrow="Unit" title="পাঠ সাজানো হচ্ছে"><div className="route-loading">তোমার unit প্রস্তুত করা হচ্ছে…</div></AppShell>;
+  const nextLesson = bundle.lessons[0];
+  return <AppShell eyebrow={`${bundle.level.code} · Unit ${bundle.unit.order}`} title={bundle.unit.title}><section className="unit-study-hero paper-card"><Route size={30} /><div><p className="card-kicker">{bundle.completed ? "Module complete" : bundle.unlocked ? "Ready to study" : "Prerequisite required"}</p><h2>{bundle.unit.objective ?? bundle.unit.summary}</h2><p>{bundle.unit.summary}</p></div></section>{bundle.unlocked && nextLesson && <section className="study-next-action"><div><p className="card-kicker">Next study action</p><h2>{nextLesson.banglaTitle}</h2><p>{nextLesson.estimatedMinutes} min · {nextLesson.skillFocus.join(" / ")} · {nextLesson.objectives[0]}</p></div><Link href={`/lesson/${nextLesson.id}`} className="lesson-link">Lesson শুরু করি <ArrowRight size={16} /></Link></section>}{bundle.chapters.length > 0 && <section className="unit-chapter-ledger"><div className="learning-ledger-heading"><div><p className="card-kicker">Study chapter</p><h2>এই unit-এর পাঠসূচি</h2></div><span>{bundle.chapters.length}টি chapter</span></div><div className="unit-chapter-strip">{bundle.chapters.map((chapter) => <Link key={chapter.id} href={`/chapter/${chapter.id}`}>{chapter.banglaTitle ?? chapter.title}<ArrowRight size={14} /></Link>)}</div></section>}<section className="learning-ledger-heading"><div><p className="card-kicker">Lesson ledger</p><h2>সময়, skill ও শেখার লক্ষ্য</h2></div><span>{bundle.lessons.length}টি lesson</span></section><section className="unit-study-list">{bundle.lessons.map((lesson, index) => <article className={!bundle.unlocked ? "is-locked" : ""} key={lesson.id}><span className="unit-study-number">{String(index + 1).padStart(2, "0")}</span><div><p>{lesson.estimatedMinutes} min · {lesson.skillFocus.join(" / ")}</p><h2>{lesson.banglaTitle}</h2><span>{lesson.objectives[0]}</span></div>{bundle.unlocked ? <Link href={`/lesson/${lesson.id}`} className="lesson-link">Open <ArrowRight size={16} /></Link> : <span className="locked-note"><LockKeyhole size={14} /> প্রয়োজনীয় ধাপ শেষ করো</span>}</article>)}</section><section className="unit-objective-note"><BookOpenCheck size={18} /><span>{bundle.unit.objective ?? "প্রতিটি lesson শেষে নিজের ভাষায় একটি বাক্য তৈরি করো।"}</span></section></AppShell>;
 }

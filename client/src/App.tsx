@@ -19,6 +19,9 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const CoursePage = lazy(() => import("@/pages/CoursePage"));
 const PracticePage = lazy(() => import("@/pages/PracticePage"));
 const UnitPage = lazy(() => import("@/pages/UnitPage"));
+const LevelPage = lazy(() => import("@/pages/LevelPage"));
+const ChapterPage = lazy(() => import("@/pages/ChapterPage"));
+const LearningPathPage = lazy(() => import("@/pages/LearningPathPage"));
 const GrammarPage = lazy(() => import("@/pages/GrammarPage"));
 const MistakeBankPage = lazy(() => import("@/pages/MistakeBankPage"));
 const ToolsPage = lazy(() => import("@/pages/ToolsPage"));
@@ -40,10 +43,14 @@ function Router() {
         <Route path="/course/:courseId" component={CoursePage} />
         <Route path="/unit/:unitId" component={UnitPage} />
         <Route path="/lesson/:lessonId" component={LessonPage} />
-        <Route path="/learn" component={CoursePage} />
-        <Route path="/learn/levels" component={CoursePage} />
-        <Route path="/learn/level/:level" component={CoursePage} />
+        <Route path="/learn" component={LearningPathPage} />
+        <Route path="/learn/levels" component={LearningPathPage} />
+        <Route path="/learn/level/:level" component={LevelPage} />
+        <Route path="/level/:level" component={LevelPage} />
+        <Route path="/levels/:level" component={LevelPage} />
         <Route path="/learn/unit/:unitId" component={UnitPage} />
+        <Route path="/chapter/:chapterId" component={ChapterPage} />
+        <Route path="/learn/chapter/:chapterId" component={ChapterPage} />
         <Route path="/learn/lesson/:lessonId" component={LessonPage} />
         <Route path="/vocabulary/flashcards" component={FlashcardsPage} />
         <Route path="/vocabulary/:word" component={VocabularyDetailPage} />

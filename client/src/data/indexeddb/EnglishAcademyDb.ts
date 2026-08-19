@@ -1,12 +1,12 @@
 import { AppError } from "@/core/errors/AppError";
 
 export const DB_NAME = "english-academy";
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export const stores = {
-  courses: "courses", levels: "levels", units: "units", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
-  grammarTopics: "grammarTopics", progress: "progress", vocabularyProgress: "vocabularyProgress", attempts: "attempts", mistakes: "mistakes",
-  reviewItems: "reviewItems", settings: "settings", writingDrafts: "writingDrafts",
+  courses: "courses", levels: "levels", units: "units", chapters: "chapters", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
+  grammarTopics: "grammarTopics", progress: "progress", activityProgress: "activityProgress", vocabularyProgress: "vocabularyProgress", attempts: "attempts", mistakes: "mistakes",
+  reviewItems: "reviewItems", objectives: "objectives", bookmarks: "bookmarks", notes: "notes", sessions: "sessions", settings: "settings", writingDrafts: "writingDrafts",
 } as const;
 
 export type StoreName = (typeof stores)[keyof typeof stores];
@@ -27,24 +27,35 @@ class EnglishAcademyDb {
   }
 
   private migrate(db: IDBDatabase, transaction: IDBTransaction) {
-    const create = (name: StoreName, keyPath = "id"): IDBObjectStore => db.objectStoreNames.contains(name) ? transaction.objectStore(name) : db.createObjectStore(name, { keyPath });
-    create(stores.courses); create(stores.levels); create(stores.units);
-    const lessonStore = create(stores.lessons); if (!lessonStore.indexNames.contains("unitId")) lessonStore.createIndex("unitId", "unitId", { unique: false });
+    const create = (name: StoreName, keyPath = "id") => db.objectStoreNames.contains(name) ? transaction.objectStore(name) : db.createObjectStore(name, { keyPath });
+    const index = (store: IDBObjectStore, name: string, keyPath: string | string[], unique = false) => { if (!store.indexNames.contains(name)) store.createIndex(name, keyPath, { unique }); };
+
+    create(stores.courses);
+    const levelStore = create(stores.levels); index(levelStore, "courseId", "courseId");
+    const unitStore = create(stores.units); index(unitStore, "levelId", "levelId");
+    const chapterStore = create(stores.chapters); index(chapterStore, "unitId", "unitId");
+    const lessonStore = create(stores.lessons); index(lessonStore, "unitId", "unitId"); index(lessonStore, "chapterId", "chapterId");
     create(stores.vocabulary); create(stores.grammarTopics);
-    const questionStore = create(stores.questions); if (!questionStore.indexNames.contains("lessonId")) questionStore.createIndex("lessonId", "lessonId", { unique: false });
-    const progressStore = create(stores.progress); if (!progressStore.indexNames.contains("userLesson")) progressStore.createIndex("userLesson", ["userId", "lessonId"], { unique: true });
-    const vocabularyProgressStore = create(stores.vocabularyProgress); if (!vocabularyProgressStore.indexNames.contains("userVocabulary")) vocabularyProgressStore.createIndex("userVocabulary", ["userId", "vocabularyId"], { unique: true });
+    const questionStore = create(stores.questions); index(questionStore, "lessonId", "lessonId");
+    const progressStore = create(stores.progress); index(progressStore, "userLesson", ["userId", "lessonId"], true);
+    const activityStore = create(stores.activityProgress); index(activityStore, "userBlock", ["userId", "lessonId", "blockId"], true); index(activityStore, "lessonId", "lessonId");
+    const vocabularyProgressStore = create(stores.vocabularyProgress); index(vocabularyProgressStore, "userVocabulary", ["userId", "vocabularyId"], true);
     create(stores.attempts);
-    const mistakeStore = create(stores.mistakes); if (!mistakeStore.indexNames.contains("userQuestion")) mistakeStore.createIndex("userQuestion", ["userId", "questionId"], { unique: false });
-    const reviewStore = create(stores.reviewItems); if (!reviewStore.indexNames.contains("due")) reviewStore.createIndex("due", "nextReviewAt", { unique: false });
+    const mistakeStore = create(stores.mistakes); index(mistakeStore, "userQuestion", ["userId", "questionId"]);
+    const reviewStore = create(stores.reviewItems); index(reviewStore, "due", "nextReviewAt");
+    const objectiveStore = create(stores.objectives); index(objectiveStore, "userObjective", ["userId", "lessonId", "objective"], true);
+    const bookmarkStore = create(stores.bookmarks); index(bookmarkStore, "userContent", ["userId", "contentId"], true);
+    const noteStore = create(stores.notes); index(noteStore, "userContent", ["userId", "contentId"], true);
+    const sessionStore = create(stores.sessions); index(sessionStore, "userStarted", ["userId", "startedAt"]);
     create(stores.settings);
-    const draftStore = create(stores.writingDrafts); if (!draftStore.indexNames.contains("userPrompt")) draftStore.createIndex("userPrompt", ["userId", "promptId"], { unique: true });
+    const draftStore = create(stores.writingDrafts); index(draftStore, "userPrompt", ["userId", "promptId"], true);
   }
 
   async get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined> { return this.run<T | undefined>(store, "readonly", (objectStore) => objectStore.get(key)); }
   async getAll<T>(store: StoreName): Promise<T[]> { return this.run<T[]>(store, "readonly", (objectStore) => objectStore.getAll()); }
   async getByIndex<T>(store: StoreName, index: string, key: IDBValidKey): Promise<T[]> { return this.run<T[]>(store, "readonly", (objectStore) => objectStore.index(index).getAll(key)); }
   async put<T>(store: StoreName, value: T): Promise<void> { await this.run<IDBValidKey>(store, "readwrite", (objectStore) => objectStore.put(value)); }
+  async delete(store: StoreName, key: IDBValidKey): Promise<void> { await this.run<undefined>(store, "readwrite", (objectStore) => objectStore.delete(key)); }
   async clear(store: StoreName): Promise<void> { await this.run<undefined>(store, "readwrite", (objectStore) => objectStore.clear()); }
 
   private async run<T>(store: StoreName, mode: IDBTransactionMode, action: (objectStore: IDBObjectStore) => IDBRequest<T>): Promise<T> {

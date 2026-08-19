@@ -11,22 +11,24 @@ import { Trail, type TrailStep } from "@/components/app/Trail";
 import { Button } from "@/components/ui/button";
 import type { Lesson, UserLessonProgress } from "@/domain/learning/types";
 
-type RoadmapItem = { lesson: Lesson; progress?: UserLessonProgress };
+type RoadmapItem = { lesson: Lesson; progress?: UserLessonProgress; unlocked: boolean };
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [dueCount, setDueCount] = useState(0);
+  const [resumeLesson, setResumeLesson] = useState<Lesson | undefined>();
 
   useEffect(() => {
-    void Promise.all([learningUseCases.getRoadmap(), learningUseCases.getDueReviews()]).then(([items, due]) => {
+    void Promise.all([learningUseCases.getRoadmap(), learningUseCases.getDueReviews(), learningUseCases.getContinueLearning()]).then(([items, due, resume]) => {
       setRoadmap(items);
       setDueCount(due.length);
+      setResumeLesson(resume?.lesson);
     });
   }, []);
 
   const completed = roadmap.filter((item) => item.progress?.completed).length;
-  const current = roadmap.find((item) => !item.progress?.completed)?.lesson ?? roadmap[0]?.lesson;
+  const current = resumeLesson ?? roadmap.find((item) => !item.progress?.completed && item.unlocked)?.lesson ?? roadmap.find((item) => item.unlocked)?.lesson;
   const trailSteps: TrailStep[] = roadmap.map((item, index) => ({
     id: item.lesson.id,
     title: item.lesson.banglaTitle,
@@ -85,7 +87,7 @@ export default function Dashboard() {
 
         <aside className="academy-insight-rail" aria-label="আজকের learning signals">
           <section className="academy-insight-card paper-card"><div className="academy-insight-title"><CalendarDays size={17} /> আজকের signal</div><strong>{completionRate}%</strong><p>তোমার current course completion</p><div className="mini-meter"><span style={{ width: `${completionRate}%` }} /></div></section>
-          <button type="button" className="review-card" onClick={() => setLocation("/practice")}><span className="review-icon"><RotateCcw size={16} /></span><span><strong>{dueCount ? `${dueCount}টি review অপেক্ষায়` : "Review queue পরিষ্কার"}</strong><small>{dueCount ? "কয়েকটি প্রশ্নে মনে ঝালিয়ে নাও" : "নতুন lesson শুরু করতে পারো"}</small></span><ArrowRight size={16} /></button>
+          <button type="button" className="review-card" onClick={() => setLocation("/review")}><span className="review-icon"><RotateCcw size={16} /></span><span><strong>{dueCount ? `${dueCount}টি review অপেক্ষায়` : "Review queue পরিষ্কার"}</strong><small>{dueCount ? "কয়েকটি প্রশ্নে মনে ঝালিয়ে নাও" : "নতুন lesson শুরু করতে পারো"}</small></span><ArrowRight size={16} /></button>
           <section className="academy-rail-callout"><span className="academy-icon-tile"><Wrench size={17} /></span><div><p>Study tools</p><strong>যে skill দরকার, সেটিই বেছে নাও।</strong><button type="button" onClick={() => setLocation("/tools")}>Tools খুলুন <ArrowRight size={14} /></button></div></section>
         </aside>
       </div>

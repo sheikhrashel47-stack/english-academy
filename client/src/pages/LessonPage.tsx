@@ -1,9 +1,6 @@
-/**
- * Design reminder — “ভাষার মানচিত্র”: a quiet editorial reading lane; lesson blocks stay
- * content-driven, with the learner’s position shown as a subtle trail landmark.
- */
-import { ArrowLeft, CheckCircle2, Clock3, Flag, ListTree, Target } from "lucide-react";
-import { useEffect, useState } from "react";
+/** Design reminder — “Emerald Study House”: lessons are calm, resumable study sessions with one clear next action. */
+import { ArrowLeft, Bookmark, CheckCircle2, Clock3, ListTree, Save, Target } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useRoute } from "wouter";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
 import { AppShell } from "@/components/app/AppShell";
@@ -12,41 +9,19 @@ import { Button } from "@/components/ui/button";
 import type { LessonBundle } from "@/data/repositories/LearningRepository";
 
 export default function LessonPage() {
-  const [, params] = useRoute("/lesson/:lessonId");
-  const [, setLocation] = useLocation();
-  const [bundle, setBundle] = useState<LessonBundle>();
-  const [answered, setAnswered] = useState(0);
-
-  useEffect(() => {
-    if (!params?.lessonId) return;
-    void learningUseCases.getLesson(params.lessonId).then(setBundle);
-  }, [params?.lessonId]);
-
+  const [, directParams] = useRoute("/lesson/:lessonId"); const [location, setLocation] = useLocation();
+  const lessonId = directParams?.lessonId ?? location.match(/\/(?:learn\/)?lesson\/([^/?#]+)/)?.[1];
+  const [bundle, setBundle] = useState<LessonBundle>(); const [answered, setAnswered] = useState(0); const [note, setNote] = useState(""); const [noteSaved, setNoteSaved] = useState(false);
+  useEffect(() => { if (!lessonId) return; void learningUseCases.getLesson(lessonId).then((next) => { setBundle(next); setNote(next.note?.text ?? ""); }); }, [lessonId]);
+  const completedBlockIds = useMemo(() => new Set([...(bundle?.progress?.completedBlockIds ?? []), ...(bundle?.activityProgress.filter((item) => item.completed).map((item) => item.blockId) ?? [])]), [bundle]);
   if (!bundle) return <AppShell eyebrow="পাঠ লোড হচ্ছে" title="একটু অপেক্ষা করো"><div className="loading-sheet">তোমার পাঠ প্রস্তুত করা হচ্ছে…</div></AppShell>;
-  const { lesson, questions, vocabulary } = bundle;
-  const answeredPercent = Math.min(100, Math.round((answered / Math.max(1, questions.length)) * 100));
-
-  return (
-    <AppShell eyebrow="A1 · Hello, English" title={lesson.banglaTitle}>
-      <div className="lesson-layout">
-        <article className="lesson-reader paper-card">
-          <button className="back-link" onClick={() => setLocation("/dashboard")}><ArrowLeft size={17} /> তোমার পথে ফিরে যাও</button>
-          <header className="lesson-header">
-            <div><p className="card-kicker">Lesson {lesson.order.toString().padStart(2, "0")}</p><h2>{lesson.title}</h2><p>{lesson.objectives[0]}</p></div>
-            <div className="lesson-time"><Clock3 size={16} /><span>{lesson.estimatedMinutes} মিনিট</span></div>
-          </header>
-          <div className="lesson-blocks">
-            {lesson.blocks.map((block) => <LessonBlockRenderer key={block.id} block={block} vocabulary={vocabulary} questions={questions} onAnswered={() => setAnswered((value) => value + 1)} />)}
-          </div>
-          <footer className="lesson-footer"><div><CheckCircle2 size={17} /><span>{answered ? `${answered}টি উত্তর সংরক্ষিত` : "প্রস্তুত হলে প্রশ্নটির উত্তর দাও"}</span></div><Button onClick={() => setLocation("/dashboard")}>পথে ফিরে যাও</Button></footer>
-        </article>
-        <aside className="lesson-margin">
-          <section className="lesson-landmark"><div className="landmark-number">{lesson.order.toString().padStart(2, "0")}</div><span>বর্তমান lesson</span><div className="landmark-line"><i style={{ height: `${answeredPercent}%` }} /></div><small>{answeredPercent}% check point সম্পন্ন</small></section>
-          <section className="objectives-note"><Target size={18} /><div><span>এই পাঠে</span>{lesson.objectives.map((item) => <p key={item}>{item}</p>)}</div></section>
-          <section className="objectives-note"><ListTree size={18} /><div><span>Skill focus</span><p>{lesson.skillFocus.join(" · ")}</p></div></section>
-          <button type="button" className="flag-link" onClick={() => window.alert("Phase 0 prototype: bookmark feature পরের ধাপে যুক্ত হবে।")}><Flag size={16} /> পরে পড়ব</button>
-        </aside>
-      </div>
-    </AppShell>
-  );
+  const { lesson, questions, vocabulary } = bundle; const totalBlocks = lesson.completionPolicy?.requiredBlockIds?.length ?? Math.max(1, lesson.blocks.length); const completedBlocks = lesson.completionPolicy?.requiredBlockIds ? lesson.completionPolicy.requiredBlockIds.filter((id) => completedBlockIds.has(id)).length : completedBlockIds.size; const progressPercent = Math.min(100, Math.round((completedBlocks / totalBlocks) * 100));
+  const saveActivity = (blockId: string, response?: string, score?: number, confidence?: "easy" | "okay" | "difficult") => { void learningUseCases.recordActivity(lesson.id, blockId, response, score, confidence).then(() => setBundle((current) => current ? { ...current, activityProgress: [...current.activityProgress.filter((item) => item.blockId !== blockId), { id: `ui-${blockId}`, schemaVersion: 4, updatedAt: new Date().toISOString(), userId: "local-learner", lessonId: lesson.id, blockId, completed: true, response, score, confidence }] } : current)); };
+  const answerQuestion = (blockId: string, isCorrect: boolean) => { setAnswered((value) => value + 1); saveActivity(blockId, isCorrect ? "correct" : "retry", isCorrect ? 100 : 0); };
+  const saveNote = async () => { await learningUseCases.saveNote(lesson.id, note); setNoteSaved(true); };
+  const toggleBookmark = async () => { const bookmarked = await learningUseCases.toggleBookmark(lesson.id, "lesson"); setBundle((current) => current ? { ...current, bookmarked } : current); };
+  return <AppShell eyebrow={`${lesson.skillFocus.join(" · ")} · ${lesson.estimatedMinutes} min`} title={lesson.banglaTitle}>
+    <div className="lesson-layout"><article className="lesson-reader paper-card"><button className="back-link" onClick={() => setLocation(`/unit/${lesson.unitId}`)}><ArrowLeft size={17} /> Unit-এ ফিরে যাও</button><header className="lesson-header"><div><p className="card-kicker">Lesson {lesson.order.toString().padStart(2, "0")}</p><h2>{lesson.title}</h2><p>{lesson.objectives[0]}</p></div><div className="lesson-time"><Clock3 size={16} /><span>{lesson.estimatedMinutes} মিনিট</span></div></header><div className="lesson-blocks">{lesson.blocks.map((block) => <LessonBlockRenderer key={block.id} block={block} vocabulary={vocabulary} questions={questions} activityProgress={bundle.activityProgress} onQuestionAnswered={answerQuestion} onActivity={saveActivity} />)}</div><footer className="lesson-footer"><div><CheckCircle2 size={17} /><span>{bundle.progress?.completed ? "Lesson complete — review anytime." : answered ? `${answered}টি উত্তর সংরক্ষিত` : "প্রস্তুত হলে প্রথম activity শুরু করো"}</span></div><Button onClick={() => setLocation("/dashboard")}>Dashboard-এ ফিরি</Button></footer></article>
+      <aside className="lesson-margin"><section className="lesson-landmark"><div className="landmark-number">{lesson.order.toString().padStart(2, "0")}</div><span>Current lesson</span><div className="landmark-line"><i style={{ height: `${progressPercent}%` }} /></div><small>{progressPercent}% session progress</small></section><section className="objectives-note"><Target size={18} /><div><span>এই পাঠে</span>{lesson.objectives.map((item) => <p key={item}>{item}</p>)}</div></section><section className="objectives-note"><ListTree size={18} /><div><span>Skill focus</span><p>{lesson.skillFocus.join(" · ")}</p></div></section><button type="button" className={`flag-link ${bundle.bookmarked ? "flagged" : ""}`} onClick={() => void toggleBookmark()}><Bookmark size={16} fill={bundle.bookmarked ? "currentColor" : "none"} /> {bundle.bookmarked ? "সংরক্ষিত" : "পরে পড়ব"}</button><section className="lesson-note"><label htmlFor="lesson-note">তোমার নোট</label><textarea id="lesson-note" value={note} onChange={(event) => { setNote(event.target.value); setNoteSaved(false); }} placeholder="একটি ছোট স্মরণিকা লেখো…" rows={4} /><Button variant="outline" size="sm" onClick={() => void saveNote()}><Save size={14} /> Note save</Button>{noteSaved && <small>সংরক্ষিত</small>}</section></aside></div>
+  </AppShell>;
 }

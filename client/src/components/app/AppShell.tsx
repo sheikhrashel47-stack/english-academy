@@ -107,9 +107,9 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
       <Link href="/dashboard" className="brand-lockup" onClick={() => setOpen(false)}>
         <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="English Academy" className="brand-mark" />
         <span className="brand-type">
-          <strong>English</strong>
-          <em>Academy</em>
-          <small>Study workspace</small>
+          <strong>English Academy</strong>
+          <em>ইংরেজি শেখার প্রতিষ্ঠান</em>
+          <small>CEFR STUDY HOUSE</small>
         </span>
       </Link>
 
