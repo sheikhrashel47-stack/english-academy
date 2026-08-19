@@ -319,7 +319,7 @@ export interface AssessmentSession extends Versioned {
 
 export interface AssessmentResult extends Versioned {
   userId: EntityId; sessionId: EntityId; blueprintId: EntityId; assessmentType: AssessmentType; level?: LevelCode; completedAt: string;
-  score: number; earnedPoints: number; totalPoints: number; passed: boolean; estimatedLevel?: LevelCode; sectionScores: Array<{ sectionId: EntityId; skill: Skill; earnedPoints: number; totalPoints: number; score: number; passed?: boolean }>;
+  score: number; earnedPoints: number; totalPoints: number; passed: boolean; estimatedLevel?: LevelCode; recommendedStartingLessonId?: EntityId; recommendedStartingLessonTitle?: string; placementNote?: string; sectionScores: Array<{ sectionId: EntityId; skill: Skill; earnedPoints: number; totalPoints: number; score: number; passed?: boolean }>;
   reviewStatus: AssessmentReviewStatus; manualReviewQuestionIds: EntityId[]; wrongQuestionIds: EntityId[]; correctQuestionIds: EntityId[];
 }
 

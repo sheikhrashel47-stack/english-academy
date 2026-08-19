@@ -45,7 +45,30 @@ export function estimatedPlacementLevel(score: number): LevelCode {
   if (score < 35) return "Pre-A1";
   if (score < 55) return "A1";
   if (score < 75) return "A2";
-  return "B1";
+  if (score < 85) return "B1";
+  if (score < 93) return "B2";
+  if (score < 98) return "C1";
+  return "C2";
+}
+
+export type MasterPlacementRecommendation = { level: LevelCode; lessonId: string; lessonTitle: string; note: string };
+
+/** Educational recommendation only: maps a placement score to the first lesson of a suitable master-course section. */
+export function recommendMasterStartingLesson(score: number): MasterPlacementRecommendation {
+  const bands: Array<{ minimum: number; level: LevelCode; lesson: number; section: string; note: string }> = [
+    { minimum: 0, level: "Pre-A1", lesson: 1, section: "English Foundation", note: "শব্দ, ধ্বনি ও সহজ sentence pattern দিয়ে শুরু করা ভালো।" },
+    { minimum: 35, level: "A1", lesson: 130, section: "Everyday Beginner English", note: "Foundation দ্রুত review করে দৈনন্দিন beginner communication শুরু করা ভালো।" },
+    { minimum: 55, level: "A2", lesson: 259, section: "Practical Pre-Intermediate English", note: "পরিচিত বিষয়ে paragraph, experience ও practical communication দিয়ে শুরু করা ভালো।" },
+    { minimum: 75, level: "B1", lesson: 388, section: "Intermediate Grammar and Communication", note: "Complex grammar, discussion ও problem-solving communication দিয়ে শুরু করা ভালো।" },
+    { minimum: 85, level: "B2", lesson: 517, section: "Upper-Intermediate Fluency", note: "Natural fluency, collocation ও extended communication দিয়ে শুরু করা ভালো।" },
+    { minimum: 93, level: "C1", lesson: 646, section: "Advanced Communication", note: "Debate, negotiation ও nuanced professional communication দিয়ে শুরু করা ভালো।" },
+    { minimum: 96, level: "C1", lesson: 904, section: "Advanced Grammar and Style", note: "Advanced grammar, cohesion, register ও precision-focused style দিয়ে শুরু করা ভালো।" },
+    { minimum: 98, level: "C2", lesson: 1033, section: "Mastery Communication", note: "Subtle meaning, mediation ও intercultural fluency দিয়ে শুরু করা ভালো।" },
+  ];
+  const band = [...bands].reverse().find((candidate) => score >= candidate.minimum) ?? bands[0];
+  const padded = String(band.lesson).padStart(4, "0");
+  const focus = ["Core concept", "Guided practice", "Everyday use", "Listening focus", "Speaking focus", "Reading focus", "Writing focus", "Mixed review", "Checkpoint", "Challenge"][(band.lesson - 1) % 10];
+  return { level: band.level, lessonId: `master-lesson-${padded}`, lessonTitle: `Lesson ${String(band.lesson).padStart(3, "0")} · ${band.section}: ${focus}`, note: band.note };
 }
 
 function objectiveAnswer(question: AssessmentQuestion, input?: AssessmentScoringInput): { isCorrect: boolean; earnedPoints: number } {

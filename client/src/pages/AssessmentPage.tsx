@@ -17,7 +17,7 @@ export default function AssessmentPage() {
   const [location, navigate] = useLocation();
   const [blueprints, setBlueprints] = useState<AssessmentBlueprint[]>([]);
   const [loading, setLoading] = useState(true);
-  const blueprintId = location === "/diagnostic" ? "assessment-diagnostic" : location.startsWith("/exams/") ? decodeURIComponent(location.replace("/exams/", "").split("/")[0]) : undefined;
+  const blueprintId = location === "/diagnostic" ? "assessment-placement-foundation" : location.startsWith("/exams/") ? decodeURIComponent(location.replace("/exams/", "").split("/")[0]) : undefined;
   const active = useMemo(() => blueprints.find((item) => item.id === blueprintId), [blueprintId, blueprints]);
   useEffect(() => { let alive = true; void learningUseCases.getAssessmentBlueprints().then((items) => { if (alive) setBlueprints(items); }).finally(() => { if (alive) setLoading(false); }); return () => { alive = false; }; }, []);
 

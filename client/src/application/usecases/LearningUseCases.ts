@@ -3,7 +3,7 @@ import { learningRepository } from "@/data/repositories/LearningRepository";
 
 export const learningUseCases = {
   initialize: () => learningRepository.seedIfNeeded(),
-  getRoadmap: () => learningRepository.getRoadmap(),
+  getRoadmap: (courseId?: string) => learningRepository.getRoadmap(courseId),
   getCourseMap: (courseId: string) => learningRepository.getCourseMap(courseId),
   getUnit: (unitId: string) => learningRepository.getUnitBundle(unitId),
   getLesson: (lessonId: string) => learningRepository.getLessonBundle(lessonId),

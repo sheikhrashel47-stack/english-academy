@@ -44,7 +44,7 @@ const navigationGroups: NavigationGroup[] = [
   {
     label: "শেখা",
     items: [
-      { href: "/course/course-english-foundations", label: "Study plan", icon: LibraryBig },
+      { href: "/course/course-english-master", label: "Study plan", icon: LibraryBig },
       { href: "/practice", label: "Practice", icon: ListChecks },
     ],
   },
@@ -76,7 +76,7 @@ const navigationGroups: NavigationGroup[] = [
 
 const mobileNavigation: NavigationItem[] = [
   { href: "/dashboard", label: "Home", icon: House },
-  { href: "/course/course-english-foundations", label: "Learn", icon: LibraryBig },
+  { href: "/course/course-english-master", label: "Learn", icon: LibraryBig },
   { href: "/practice", label: "Practice", icon: ListChecks },
   { href: "/tools", label: "Tools", icon: Wrench },
   { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },

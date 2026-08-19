@@ -371,12 +371,16 @@ class LearningRepository {
     return { lesson, vocabulary: allVocabulary.filter((item) => lesson.vocabularyIds.includes(item.id)), questions, progress: progress[0], activityProgress: activityProgress.filter((item) => item.userId === learnerId), bookmarked: Boolean(bookmarks[0]), note: notes.find((item) => item.userId === learnerId) };
   }
 
-  async getRoadmap(): Promise<RoadmapItem[]> {
+  async getRoadmap(courseId?: string): Promise<RoadmapItem[]> {
     const curriculum = await this.getCurriculum(); const state = this.completionState(curriculum);
-    const levelOrder = new Map(curriculum.levels.sort((a, b) => a.order - b.order).map((level, index) => [level.id, index]));
-    const unitOrder = new Map(curriculum.units.sort((a, b) => a.order - b.order).map((unit, index) => [unit.id, index]));
-    return curriculum.lessons.sort((a, b) => (levelOrder.get(curriculum.units.find((unit) => unit.id === a.unitId)?.levelId ?? "") ?? 99) - (levelOrder.get(curriculum.units.find((unit) => unit.id === b.unitId)?.levelId ?? "") ?? 99) || (unitOrder.get(a.unitId) ?? 99) - (unitOrder.get(b.unitId) ?? 99) || a.order - b.order).map((lesson) => {
-      const unit = curriculum.units.find((item) => item.id === lesson.unitId)!;
+    const courseLevelIds = courseId ? new Set(curriculum.levels.filter((level) => level.courseId === courseId).map((level) => level.id)) : undefined;
+    const scopedUnits = curriculum.units.filter((unit) => !courseLevelIds || courseLevelIds.has(unit.levelId));
+    const scopedUnitIds = new Set(scopedUnits.map((unit) => unit.id));
+    const scopedLessons = curriculum.lessons.filter((lesson) => scopedUnitIds.has(lesson.unitId));
+    const levelOrder = new Map(curriculum.levels.filter((level) => !courseLevelIds || courseLevelIds.has(level.id)).sort((a, b) => a.order - b.order).map((level, index) => [level.id, index]));
+    const unitOrder = new Map(scopedUnits.sort((a, b) => a.order - b.order).map((unit, index) => [unit.id, index]));
+    return scopedLessons.sort((a, b) => (levelOrder.get(scopedUnits.find((unit) => unit.id === a.unitId)?.levelId ?? "") ?? 99) - (levelOrder.get(scopedUnits.find((unit) => unit.id === b.unitId)?.levelId ?? "") ?? 99) || (unitOrder.get(a.unitId) ?? 99) - (unitOrder.get(b.unitId) ?? 99) || a.order - b.order).map((lesson) => {
+      const unit = scopedUnits.find((item) => item.id === lesson.unitId)!;
       const progress = curriculum.progress.find((item) => item.lessonId === lesson.id);
       return { lesson, progress, unlocked: isUnlocked([...(unit.prerequisites ?? []), ...(lesson.prerequisites ?? [])], state), completed: Boolean(progress?.completed), unitId: unit.id, levelId: unit.levelId };
     });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { phase6AssessmentBlueprints, phase6AssessmentQuestions } from "@/data/content/phase6AssessmentSeed";
-import { estimatedPlacementLevel, scoreAssessment, selectAdaptiveQuestion, selectAssessmentQuestions } from "@/domain/learning/assessmentEngine";
+import { estimatedPlacementLevel, recommendMasterStartingLesson, scoreAssessment, selectAdaptiveQuestion, selectAssessmentQuestions } from "@/domain/learning/assessmentEngine";
 
 describe("assessment engine", () => {
   const diagnostic = phase6AssessmentBlueprints.find((item) => item.id === "assessment-diagnostic")!;
@@ -28,5 +28,11 @@ describe("assessment engine", () => {
     expect(next?.id).not.toBe("aq-grammar-01");
     expect(estimatedPlacementLevel(34)).toBe("Pre-A1");
     expect(estimatedPlacementLevel(76)).toBe("B1");
+  });
+  it("maps placement evidence to an exact master-course starting lesson", () => {
+    expect(recommendMasterStartingLesson(0).lessonId).toBe("master-lesson-0001");
+    expect(recommendMasterStartingLesson(55).lessonId).toBe("master-lesson-0259");
+    expect(recommendMasterStartingLesson(85).lessonId).toBe("master-lesson-0517");
+    expect(recommendMasterStartingLesson(98).lessonId).toBe("master-lesson-1033");
   });
 });

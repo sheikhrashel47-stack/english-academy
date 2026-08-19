@@ -1,5 +1,6 @@
 import { phase0Seed } from "@/data/content/phase0Seed";
 import type { Chapter, LearningSeed, Lesson, McqQuestion, Question, Skill, Unit, VocabularyItem } from "@/domain/learning/types";
+import { masterCurriculumSeed } from "@/data/content/masterCurriculumSeed";
 
 const timestamp = "2026-08-19T00:00:00.000Z";
 const base = { schemaVersion: 4, updatedAt: timestamp, createdAt: timestamp, contentVersion: "2.0", status: "published" as const };
@@ -58,21 +59,21 @@ const chapters: Chapter[] = [
 ];
 
 export const phase2Seed: LearningSeed = {
-  courses: phase0Seed.courses.map((course) => ({ ...course, ...base, description: "Bangla-speaking learners-এর জন্য offline-first, CEFR-aligned English learning path.", tags: ["cefr", "offline", "phase2"] })),
-  levels: phase0Seed.levels.map((level) => {
+  courses: [...phase0Seed.courses.map((course) => ({ ...course, ...base, description: "Bangla-speaking learners-এর জন্য offline-first, CEFR-aligned English learning path.", tags: ["cefr", "offline", "phase2"] })), ...masterCurriculumSeed.courses],
+  levels: [...phase0Seed.levels.map((level) => {
     if (level.id === "level-pre-a1") return { ...level, ...base, availability: "available" as const, unitIds: ["unit-prea1-start"], objective: "চেনা শব্দ ও এক লাইনের পরিচয়ে আত্মবিশ্বাস।" };
     if (level.id === "level-a1") return { ...level, ...base, availability: "available" as const, unitIds: ["unit-a1-hello", "unit-a1-routine", "unit-a1-people", "unit-a1-daily-life"], objective: "পরিচয় ও দৈনন্দিন জীবন নিয়ে সহজ যোগাযোগ।", prerequisites: [{ kind: "level", id: "level-pre-a1" }] };
     if (level.id === "level-a2") return { ...level, ...base, prerequisites: [{ kind: "level", id: "level-a1" }] };
     return { ...level, ...base };
-  }),
+  }), ...masterCurriculumSeed.levels],
   units: [...phase0Seed.units.map((unit) => {
     if (unit.id === "unit-a1-hello") return { ...unit, ...base, chapterIds: ["chapter-a1-hello"], prerequisites: [{ kind: "level" as const, id: "level-pre-a1" }] };
     if (unit.id === "unit-a1-routine") return { ...unit, ...base, lessonIds: [...unit.lessonIds, "lesson-a1-schedule"], chapterIds: ["chapter-a1-routine"], prerequisites: [{ kind: "unit" as const, id: "unit-a1-hello" }] };
     return { ...unit, ...base };
-  }), ...phase2Units],
-  chapters,
-  lessons: [...phase0Seed.lessons.map((lesson) => ({ ...lesson, ...base, tags: ["phase1-migrated", ...lesson.skillFocus], completionPolicy: { requiredQuestionIds: lesson.questionIds, minimumScore: 67, allowSkip: false, allowTestOut: false }, difficultyBand: lesson.unitId.startsWith("unit-a2") ? "elementary" as const : "beginner" as const })), ...lessons],
-  vocabulary: [...phase0Seed.vocabulary.map((item) => ({ ...item, ...base, tags: [item.level, item.topic] })), ...vocabulary],
-  questions: [...phase0Seed.questions.map((item) => ({ ...item, ...base, contentVersion: "2.0" })), ...questions] as Question[],
-  grammarTopics: phase0Seed.grammarTopics.map((item) => ({ ...item, ...base, tags: [item.level, "grammar"] })),
+  }), ...phase2Units, ...masterCurriculumSeed.units],
+  chapters: [...chapters, ...masterCurriculumSeed.chapters],
+  lessons: [...phase0Seed.lessons.map((lesson) => ({ ...lesson, ...base, tags: ["phase1-migrated", ...lesson.skillFocus], completionPolicy: { requiredQuestionIds: lesson.questionIds, minimumScore: 67, allowSkip: false, allowTestOut: false }, difficultyBand: lesson.unitId.startsWith("unit-a2") ? "elementary" as const : "beginner" as const })), ...lessons, ...masterCurriculumSeed.lessons],
+  vocabulary: [...phase0Seed.vocabulary.map((item) => ({ ...item, ...base, tags: [item.level, item.topic] })), ...vocabulary, ...masterCurriculumSeed.vocabulary],
+  questions: [...phase0Seed.questions.map((item) => ({ ...item, ...base, contentVersion: "2.0" })), ...questions, ...masterCurriculumSeed.questions] as Question[],
+  grammarTopics: [...phase0Seed.grammarTopics.map((item) => ({ ...item, ...base, tags: [item.level, "grammar"] })), ...masterCurriculumSeed.grammarTopics],
 };
