@@ -174,7 +174,7 @@ class LearningRepository {
     }
   }
 
-  async getSettings(): Promise<AppSettings> { await this.seedIfNeeded(); const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId); return { ...defaultSettings(), ...saved, id: settingsId }; }
+  async getSettings(): Promise<AppSettings> { await this.seedIfNeeded({ waitForCorpus: false }); const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId); return { ...defaultSettings(), ...saved, id: settingsId }; }
   async getAssessmentBlueprints(filters: { assessmentType?: AssessmentType; level?: AssessmentBlueprint["level"] } = {}): Promise<AssessmentBlueprint[]> {
     await this.seedIfNeeded({ waitForCorpus: false });
     const records = filters.assessmentType
@@ -332,7 +332,7 @@ class LearningRepository {
   }
 
   private async getCurriculum() {
-    await this.seedIfNeeded();
+    await this.seedIfNeeded({ waitForCorpus: false });
     const [courses, levels, units, chapters, lessons, progress] = await Promise.all([
       englishAcademyDb.getAll<import("@/domain/learning/types").Course>(stores.courses), englishAcademyDb.getAll<import("@/domain/learning/types").Level>(stores.levels),
       englishAcademyDb.getAll<Unit>(stores.units), englishAcademyDb.getAll<Chapter>(stores.chapters), englishAcademyDb.getAll<Lesson>(stores.lessons), englishAcademyDb.getAll<UserLessonProgress>(stores.progress),
@@ -558,7 +558,7 @@ class LearningRepository {
   async getVocabulary(): Promise<VocabularyItem[]> { await this.seedIfNeeded(); return (await englishAcademyDb.getAll<VocabularyItem>(stores.vocabulary)).sort((a, b) => a.word.localeCompare(b.word)); }
   async getVocabularyEntries(): Promise<VocabularyEntry[]> { const [items, progress] = await Promise.all([this.getVocabulary(), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress)]); return items.map((item) => ({ item, progress: progress.find((record) => record.userId === learnerId && record.vocabularyId === item.id) })); }
   async getPracticeQuestions(filters: { skill?: "grammar" | "vocabulary"; difficulty?: number; count: number }): Promise<Question[]> { await this.seedIfNeeded(); const questions = await englishAcademyDb.getAll<Question>(stores.questions); return questions.filter((question) => (!filters.skill || question.skill === filters.skill) && (!filters.difficulty || question.difficulty === filters.difficulty)).sort(() => 0.5 - Math.random()).slice(0, filters.count); }
-  async getDueReviewItems(): Promise<ReviewItem[]> { await this.seedIfNeeded(); return new IntervalReviewScheduler().getDueItems(await englishAcademyDb.getAll<ReviewItem>(stores.reviewItems)); }
+  async getDueReviewItems(): Promise<ReviewItem[]> { await this.seedIfNeeded({ waitForCorpus: false }); return new IntervalReviewScheduler().getDueItems(await englishAcademyDb.getAll<ReviewItem>(stores.reviewItems)); }
 
   async recordActivity(lessonId: string, blockId: string, response?: string, score?: number, confidence?: UserActivityProgress["confidence"]): Promise<void> {
     await this.seedIfNeeded(); const now = timestamp();
