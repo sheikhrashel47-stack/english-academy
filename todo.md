@@ -88,3 +88,12 @@
 - [ ] IndexedDB-তে ২০,০০০+ vocabulary ও ৫০,০০০+ sentence record import করে aggregate count এবং source totals যাচাই করা।
 - [ ] Offline cold-start, paginated search, filters, detail lookup, SRS queue এবং bundle size corpus scale-এ পরীক্ষা করা।
 - [ ] GitHub Pages-এ corpus-enabled release deploy করে public count ও attribution handoff যাচাই করা।
+
+## Phase 4 personalised corpus learning
+
+- [ ] প্রতিটি vocabulary detail-এ indexed, attributed usage sentence list ও source attribution দেখানো।
+- [ ] Licensed/offline-safe pronunciation audio pack, local caching, playback controls ও unavailable-audio fallback যোগ করা।
+- [ ] CEFR diagnostic question bank, score banding এবং learner-ready onboarding assessment তৈরি করা।
+- [ ] Diagnostic result অনুযায়ী persisted target level, study intensity ও personalised lesson/vocabulary review path তৈরি করা।
+- [ ] Usage-sentence view, audio download/playback, diagnostic completion ও personalised path-এর regression এবং responsive validation করা।
+- [ ] GitHub Pages-এ personalised corpus-learning release publish ও production deep-link যাচাই করা。

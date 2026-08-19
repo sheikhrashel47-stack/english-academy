@@ -32,6 +32,8 @@ const FlashcardsPage = lazy(() => import("@/pages/FlashcardsPage"));
 const ReviewPage = lazy(() => import("@/pages/ReviewPage"));
 const PrototypeStudioPage = lazy(() => import("@/pages/PrototypeStudioPage"));
 const ContentAdminPage = lazy(() => import("@/pages/ContentAdminPage"));
+const AudioLibraryPage = lazy(() => import("@/pages/AudioLibraryPage"));
+const DiagnosticPage = lazy(() => import("@/pages/DiagnosticPage"));
 
 function Router() {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -57,6 +59,8 @@ function Router() {
         <Route path="/vocabulary/flashcards" component={FlashcardsPage} />
         <Route path="/vocabulary/:word" component={VocabularyDetailPage} />
         <Route path="/vocabulary" component={VocabularyPage} />
+        <Route path="/audio" component={AudioLibraryPage} />
+        <Route path="/diagnostic" component={DiagnosticPage} />
         <Route path="/grammar/:conceptId" component={GrammarConceptPage} />
         <Route path="/grammar" component={GrammarPage} />
         <Route path="/practice/setup" component={PracticePage} />

@@ -10,11 +10,11 @@ import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
 import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, Attempt, Bookmark, Chapter, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, Question, ReviewItem, SRSCard, Skill, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
+import type { AppSettings, Attempt, Bookmark, Chapter, DiagnosticResult, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Question, ReviewItem, SRSCard, Skill, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase3.2";
+const seedVersion = "phase4.0";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
 
@@ -30,7 +30,7 @@ export type LearningSummary = { totalLessons: number; completedLessons: number; 
 export type VocabularyReviewQueue = { overdue: VocabularySearchResult["entries"]; dueToday: VocabularySearchResult["entries"]; newItems: VocabularySearchResult["entries"]; learning: VocabularySearchResult["entries"]; review: VocabularySearchResult["entries"]; mastered: VocabularySearchResult["entries"] };
 export type CorpusSnapshot = { vocabulary: number; sentences: number; grammar: number; sources: number; corpusVersion?: string };
 
-const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 4, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
+const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 5, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
 class LearningRepository {
   async seedIfNeeded(): Promise<void> {
@@ -224,11 +224,45 @@ class LearningRepository {
     return { entries: newEntries, page, pageSize, total: filters.masteryState === "new" ? newEntries.length : result.total, hasMore: (page + 1) * pageSize < result.total };
   }
 
-  async getVocabularyDetail(vocabularyId: string) {
+  async getVocabularyDetail(vocabularyId: string, sentencePage = 0, sentencePageSize = 6) {
     await this.seedIfNeeded(); const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, vocabularyId);
     if (!item) throw new AppError("ContentError", "শব্দটি খুঁজে পাওয়া যায়নি।");
-    const [entry, sentences, source] = await Promise.all([this.entryForVocabulary(item), englishAcademyDb.getByIndex<VocabularySentence>(stores.sentences, "vocabularyId", vocabularyId), item.sourceId ? englishAcademyDb.get<VocabularySource>(stores.vocabularySources, item.sourceId) : Promise.resolve(undefined)]);
-    return { ...entry, sentences, source };
+    const [entry, sentencePageResult, source] = await Promise.all([
+      this.entryForVocabulary(item),
+      englishAcademyDb.getPage<VocabularySentence>(stores.sentences, { index: "vocabularyId", query: vocabularyId, offset: sentencePage * sentencePageSize, limit: sentencePageSize }),
+      item.sourceId ? englishAcademyDb.get<VocabularySource>(stores.vocabularySources, item.sourceId) : Promise.resolve(undefined),
+    ]);
+    return { ...entry, sentences: sentencePageResult.items, sentencePage, sentencePageSize, sentenceTotal: sentencePageResult.total, hasMoreSentences: (sentencePage + 1) * sentencePageSize < sentencePageResult.total, source };
+  }
+
+  async getVocabularySentences(vocabularyId: string, page = 0, pageSize = 6) {
+    await this.seedIfNeeded();
+    const result = await englishAcademyDb.getPage<VocabularySentence>(stores.sentences, { index: "vocabularyId", query: vocabularyId, offset: Math.max(0, page) * pageSize, limit: Math.min(12, Math.max(3, pageSize)) });
+    return { sentences: result.items, page, pageSize, total: result.total, hasMore: (page + 1) * pageSize < result.total };
+  }
+
+  async saveDiagnosticResult(result: DiagnosticResult): Promise<PersonalStudyPath> {
+    await this.updateSettings({ diagnosticResult: result, dailyGoalMinutes: result.suggestedLevel === "Pre-A1" || result.suggestedLevel === "A1" ? 15 : 20 });
+    return this.getPersonalStudyPath();
+  }
+
+  async getPersonalStudyPath(): Promise<PersonalStudyPath> {
+    const [settings, roadmap] = await Promise.all([this.getSettings(), this.getRoadmap()]);
+    const diagnostic = settings.diagnosticResult;
+    const targetLevel = diagnostic?.suggestedLevel ?? "A1";
+    const focusSkill = diagnostic?.focusSkill ?? "vocabulary";
+    const levelRoadmap = roadmap.filter((item) => item.levelId.includes(targetLevel.toLocaleLowerCase("en-US")) && item.unlocked);
+    const candidate = levelRoadmap.find((item) => !item.completed)?.lesson ?? roadmap.find((item) => item.unlocked && !item.completed)?.lesson;
+    return {
+      diagnostic,
+      status: diagnostic ? "ready" : "diagnostic-needed",
+      targetLevel,
+      focusSkill,
+      dailyGoalMinutes: settings.dailyGoalMinutes,
+      nextLessonId: candidate?.id,
+      reviewFocus: focusSkill === "grammar" ? "grammar" : "vocabulary",
+      message: diagnostic ? `তোমার ${targetLevel} study path ${focusSkill} skill-কে অগ্রাধিকার দিচ্ছে।` : "একটি সংক্ষিপ্ত diagnostic দিয়ে তোমার শুরু করার level ও focus নির্ধারণ করো।",
+    };
   }
 
   async getSrsCard(vocabularyId: string): Promise<SRSCard> {

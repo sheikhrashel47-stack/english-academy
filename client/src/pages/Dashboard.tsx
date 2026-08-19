@@ -7,9 +7,8 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
 import { AppShell, PhaseZeroNotice } from "@/components/app/AppShell";
-import { Trail, type TrailStep } from "@/components/app/Trail";
 import { Button } from "@/components/ui/button";
-import type { Lesson, UserLessonProgress } from "@/domain/learning/types";
+import type { Lesson, PersonalStudyPath, UserLessonProgress } from "@/domain/learning/types";
 
 type RoadmapItem = { lesson: Lesson; progress?: UserLessonProgress; unlocked: boolean };
 
@@ -18,23 +17,20 @@ export default function Dashboard() {
   const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [dueCount, setDueCount] = useState(0);
   const [resumeLesson, setResumeLesson] = useState<Lesson | undefined>();
+  const [studyPath, setStudyPath] = useState<PersonalStudyPath>();
 
   useEffect(() => {
-    void Promise.all([learningUseCases.getRoadmap(), learningUseCases.getDueReviews(), learningUseCases.getContinueLearning()]).then(([items, due, resume]) => {
+    void Promise.all([learningUseCases.getRoadmap(), learningUseCases.getDueReviews(), learningUseCases.getContinueLearning(), learningUseCases.getPersonalStudyPath()]).then(([items, due, resume, path]) => {
       setRoadmap(items);
       setDueCount(due.length);
       setResumeLesson(resume?.lesson);
+      setStudyPath(path);
     });
   }, []);
 
   const completed = roadmap.filter((item) => item.progress?.completed).length;
   const current = resumeLesson ?? roadmap.find((item) => !item.progress?.completed && item.unlocked)?.lesson ?? roadmap.find((item) => item.unlocked)?.lesson;
-  const trailSteps: TrailStep[] = roadmap.map((item, index) => ({
-    id: item.lesson.id,
-    title: item.lesson.banglaTitle,
-    shortLabel: item.lesson.title,
-    status: item.progress?.completed ? "complete" : index === completed ? "current" : "locked",
-  }));
+  const cefrLevels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
   const completionRate = Math.min(100, Math.round((completed / Math.max(1, roadmap.length)) * 100));
 
@@ -65,18 +61,23 @@ export default function Dashboard() {
             <p>{current?.objectives[0] ?? "আজ একটি ছোট practice session শুরু করো এবং পরের শেখার নির্দেশনা তৈরি করো।"}</p>
             <div className="academy-mission-actions">
               <Button variant="outline" onClick={() => current ? setLocation(`/lesson/${current.id}`) : setLocation("/practice")}>শুরু করো <ArrowRight size={16} /></Button>
-              <button type="button" className="academy-text-action" onClick={() => setLocation("/course/course-english-foundations")}>Learning Map দেখো</button>
+              <button type="button" className="academy-text-action" onClick={() => setLocation("/learn")}>CEFR পাঠক্রম দেখো</button>
             </div>
           </section>
 
           <section className="academy-path paper-card" aria-labelledby="path-heading">
-            <div className="section-heading-row"><div><p className="card-kicker">Learning map</p><h2 className="section-title" id="path-heading">A1 Foundation</h2></div><span className="route-progress">{completed}/{roadmap.length || 1} সম্পন্ন</span></div>
-            <Trail steps={trailSteps} onCurrentClick={() => current && setLocation(`/lesson/${current.id}`)} />
-            <div className="academy-path-footer"><span>অগ্রগতি এই device-এই সংরক্ষিত থাকে।</span><button type="button" onClick={() => setLocation("/course/course-english-foundations")}>পূর্ণ map <ArrowRight size={14} /></button></div>
+            <div className="section-heading-row"><div><p className="card-kicker">CEFR progression</p><h2 className="section-title" id="path-heading">তোমার current study level</h2></div><span className="route-progress">{completed}/{roadmap.length || 1} lesson সম্পন্ন</span></div>
+            <div className="dashboard-cefr-ribbon" aria-label="CEFR study progression">{cefrLevels.map((level) => <span key={level} className={level === (studyPath?.targetLevel ?? "A1") ? "is-current" : level === "Pre-A1" ? "is-complete" : ""}><b>{level}</b><small>{level === (studyPath?.targetLevel ?? "A1") ? "Current focus" : level === "Pre-A1" ? "Foundation" : "Study ahead"}</small></span>)}</div>
+            <div className="academy-path-footer"><span>Progress এই device-এই সংরক্ষিত থাকে।</span><button type="button" onClick={() => setLocation("/learn")}>CEFR পাঠক্রম <ArrowRight size={14} /></button></div>
+          </section>
+
+          <section className="personal-study-ledger paper-card" aria-label="Personal study path">
+            <div><p className="card-kicker">Personal study signal</p><h2>{studyPath?.status === "ready" ? `${studyPath.targetLevel} · ${studyPath.focusSkill} focus` : "তোমার শুরু করার level নির্ধারণ করো"}</h2><p>{studyPath?.message ?? "Diagnostic signal load হচ্ছে…"}</p></div>
+            <Button variant="outline" onClick={() => setLocation(studyPath?.status === "ready" && studyPath.nextLessonId ? `/lesson/${studyPath.nextLessonId}` : "/diagnostic")}>{studyPath?.status === "ready" ? "আজকের path" : "Diagnostic শুরু"}<ArrowRight size={16} /></Button>
           </section>
 
           <section aria-labelledby="tools-heading">
-            <div className="academy-section-heading"><div><p className="card-kicker">Quick tools</p><h2 className="section-title" id="tools-heading">আজ যে tool দরকার</h2></div><button type="button" className="academy-text-action" onClick={() => setLocation("/tools")}>সব tools <ArrowRight size={15} /></button></div>
+            <div className="academy-section-heading"><div><p className="card-kicker">Study actions</p><h2 className="section-title" id="tools-heading">আজকের প্রয়োজনীয় চর্চা</h2></div><button type="button" className="academy-text-action" onClick={() => setLocation("/tools")}>সব study tool <ArrowRight size={15} /></button></div>
             <div className="academy-tool-grid">
               <button type="button" className="academy-tool-card" onClick={() => setLocation("/practice")}><span className="academy-icon-tile"><BrainCircuit size={18} /></span><strong>Quick Practice</strong><small>একটি focused question session</small></button>
               <button type="button" className="academy-tool-card" onClick={() => setLocation("/vocabulary")}><span className="academy-icon-tile"><BookOpenCheck size={18} /></span><strong>Vocabulary</strong><small>শব্দ খোঁজো ও শুনো</small></button>

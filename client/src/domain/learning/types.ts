@@ -10,6 +10,7 @@ export type PrerequisiteKind = "lesson" | "unit" | "level";
 export type LearningEventType = "lesson-started" | "lesson-completed" | "practice" | "review" | "assessment";
 export type VocabularyMasteryState = "new" | "learning" | "familiar" | "strong" | "mastered";
 export type FlashcardRating = "again" | "hard" | "good" | "easy";
+export type DiagnosticSkill = "vocabulary" | "grammar" | "reading" | "listening";
 export type SupportedLicense = "MIT" | "Apache-2.0" | "CC0-1.0" | "CC-BY-2.0-FR" | "CC-BY-4.0" | "CC-BY-SA-4.0" | "WordNet-3.0" | "Public-Domain" | "Other";
 
 export interface Versioned {
@@ -112,6 +113,25 @@ export interface VocabularySentence extends Versioned {
   vocabularyId?: EntityId; text: string; banglaTranslation?: string; language: "en"; sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; commercialUseAllowed: boolean; attribution: string;
 }
 
+export interface DiagnosticResult {
+  completedAt: string;
+  score: number;
+  suggestedLevel: LevelCode;
+  focusSkill: DiagnosticSkill;
+  skillScores: Record<DiagnosticSkill, { correct: number; total: number }>;
+}
+
+export interface PersonalStudyPath {
+  diagnostic?: DiagnosticResult;
+  status: "diagnostic-needed" | "ready";
+  targetLevel: LevelCode;
+  focusSkill: DiagnosticSkill;
+  dailyGoalMinutes: number;
+  nextLessonId?: EntityId;
+  reviewFocus: "vocabulary" | "grammar";
+  message: string;
+}
+
 export interface GrammarTopic extends Versioned { lessonId: EntityId; title: string; banglaTitle: string; description: string; level: LevelCode; }
 export interface GrammarExample { english: string; bangla: string; note?: string; }
 export interface GrammarConcept extends Versioned {
@@ -152,7 +172,7 @@ export interface ObjectiveProgress extends Versioned { userId: EntityId; lessonI
 export interface Bookmark extends Versioned { userId: EntityId; contentId: EntityId; contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing"; createdAt: string; }
 export interface PersonalNote extends Versioned { userId: EntityId; contentId: EntityId; text: string; }
 export interface LearningSession extends Versioned { userId: EntityId; activity: LearningEventType; lessonId?: EntityId; skill?: Skill; startedAt: string; endedAt?: string; durationSeconds?: number; completed: boolean; }
-export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; lastLessonId?: EntityId; }
+export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; audioPackVersion?: string; lastLessonId?: EntityId; diagnosticResult?: DiagnosticResult; }
 export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
 
 export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };

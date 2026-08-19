@@ -3,5 +3,6 @@ import App from "./App";
 import "./index.css";
 import "./phase1.css";
 import "./premium-academic.css";
+import "./phase4.css";
 
 createRoot(document.getElementById("root")!).render(<App />);
