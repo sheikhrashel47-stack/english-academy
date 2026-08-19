@@ -14,7 +14,7 @@ import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
 import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, LibraryActivity, LibraryCategory, LibraryResource, LibraryResourceFilters, LibrarySearchFilters, LibrarySearchHistory, LibrarySearchHit, LibrarySearchResult, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
+import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, Course, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, LibraryActivity, LibraryCategory, LibraryResource, LibraryResourceFilters, LibrarySearchFilters, LibrarySearchHistory, LibrarySearchHit, LibrarySearchResult, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
 import type { AssessmentAnswer, AssessmentResult, AssessmentSession } from "@/domain/learning/types";
 import type { AchievementDefinition, AchievementProgress, DailyStudyPlan, LearningGoal, PersonalLearningEvent, PersonalLearningProfile, StudyDayRecord, XpLedgerEntry } from "@/domain/learning/types";
 import { createPrivacySafeVerificationPayload, deriveCompletionBadges, isFullyScoredCompletion, type CompletionBadge } from "@/domain/learning/certificateEngine";
@@ -22,7 +22,7 @@ import { academyLevelFor, buildDailyStudyPlan, calculateEventXp, localStudyDate,
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase8.library.1";
+const seedVersion = "phase10.master.1";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
 const alphabetLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -71,7 +71,9 @@ class LearningRepository {
 
   private async seedLocalData(): Promise<void> {
     const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
-    if (settings?.seedVersion !== seedVersion) {
+    const existingCourses = await englishAcademyDb.getAll<Course>(stores.courses);
+    const hasMasterCourse = existingCourses.some((course) => course.id === "course-english-master");
+    if (settings?.seedVersion !== seedVersion || !hasMasterCourse) {
       await this.persistCurriculum(phase2Seed);
       await this.persistPhase3Seed();
       await this.persistSkillSeed();
