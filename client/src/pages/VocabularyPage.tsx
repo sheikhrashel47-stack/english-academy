@@ -1,26 +1,26 @@
-/**
- * Design reminder — “Emerald Study House”: vocabulary is a searchable study
- * library where language content leads and progress metadata stays secondary.
- */
-import { BookOpenCheck, BookText, Search, Volume2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/components/app/AppShell";
+/** Design reminder — Emerald Study House: a quiet, paginated catalogue where word study leads and metadata stays supporting. */
+import { BookOpenCheck, ChevronLeft, ChevronRight, Search, Volume2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "wouter";
 import { learningUseCases } from "@/application/usecases/LearningUseCases";
-import type { VocabularyItem } from "@/domain/learning/types";
+import { AppShell } from "@/components/app/AppShell";
+import { Button } from "@/components/ui/button";
+import type { LevelCode, VocabularyMasteryState, VocabularySearchResult } from "@/domain/learning/types";
+
+const levels: Array<LevelCode | "all"> = ["all", "Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+const mastery: Array<VocabularyMasteryState | "all"> = ["all", "new", "learning", "familiar", "strong", "mastered"];
+const masteryLabel: Record<VocabularyMasteryState | "all", string> = { all: "সব mastery", new: "নতুন", learning: "শেখা চলছে", familiar: "পরিচিত", strong: "ভালো", mastered: "আয়ত্ত" };
 
 export default function VocabularyPage() {
-  const [items, setItems] = useState<VocabularyItem[]>([]);
-  const [query, setQuery] = useState("");
-  useEffect(() => { void learningUseCases.getVocabulary().then(setItems); }, []);
-  const filtered = useMemo(() => items.filter((item) => `${item.word} ${item.meaning} ${item.topic}`.toLowerCase().includes(query.toLowerCase())), [items, query]);
-  const groups = useMemo(() => Object.entries(filtered.reduce<Record<string, VocabularyItem[]>>((all, item) => { (all[item.topic] ??= []).push(item); return all; }, {})), [filtered]);
-  const speak = (word: string) => { if ("speechSynthesis" in window) { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(word)); } };
-  return (
-    <AppShell eyebrow="Vocabulary" title="শব্দের study desk">
-      <section className="vocabulary-intro paper-card"><div><p className="card-kicker"><BookOpenCheck size={14} /> Vocabulary library · A1 → A2</p><h2>শব্দ দেখো, বলো,<br /><em>নিজের বাক্যে রাখো।</em></h2><p>Topic ধরে শব্দগুলো দেখো, উচ্চারণ শোনো, তারপর নিজের বাক্যে ব্যবহার করে দেখো।</p></div><div className="vocabulary-count"><strong>{items.length}</strong><span>টি শেখার শব্দ</span></div></section>
-      <section className="vocabulary-level-band" aria-label="বর্তমান vocabulary focus"><div><BookText size={18} /><span><strong>Current focus</strong> greetings ও daily life</span></div><div className="vocabulary-cefr-mini"><span className="vocabulary-cefr-current">A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2</span></div></section>
-      <label className="vocab-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="শব্দ বা বাংলা অর্থ খুঁজো" /><span>{filtered.length} ফল</span></label>
-      <section className="vocabulary-library" aria-label="Vocabulary study library">{groups.length ? groups.map(([topic, group], groupIndex) => <section className="vocabulary-topic" key={topic}><header className="vocabulary-topic-heading"><span>{String(groupIndex + 1).padStart(2, "0")}</span><div><p>Study set</p><h2>{topic}</h2></div><small>{group.length}টি শব্দ</small></header><div className="vocabulary-grid">{group.map((item, itemIndex) => <article className="vocab-card paper-card" key={item.id}><header><span>{String(itemIndex + 1).padStart(2, "0")} · {item.partOfSpeech}</span><button type="button" aria-label={`${item.word} শুনুন`} onClick={() => speak(item.word)}><Volume2 size={16} /></button></header><h2>{item.word}</h2><p className="vocab-meaning">{item.meaning}</p><span className="pronunciation">{item.pronunciation}</span><p className="vocab-example">“{item.example}”</p><footer><span>{item.level} level</span><span>{item.collocations[0]}</span></footer></article>)}</div></section>) : <div className="vocabulary-empty"><BookText size={20} /><h2>এই নামে কোনো শব্দ নেই</h2><p>অন্য শব্দ বা বাংলা অর্থ দিয়ে আবার খোঁজো।</p></div>}</section>
-    </AppShell>
-  );
+  const [result, setResult] = useState<VocabularySearchResult | null>(null);
+  const [query, setQuery] = useState(""); const [level, setLevel] = useState<LevelCode | "all">("all"); const [topic, setTopic] = useState("all"); const [state, setState] = useState<VocabularyMasteryState | "all">("all"); const [page, setPage] = useState(0);
+  useEffect(() => { const load = () => void learningUseCases.searchVocabulary({ query, level: level === "all" ? undefined : level, topic: topic === "all" ? undefined : topic, masteryState: state === "all" ? undefined : state, page, pageSize: 18 }).then(setResult); if (!query) { load(); return; } const timer = window.setTimeout(load, 120); return () => window.clearTimeout(timer); }, [query, level, topic, state, page]);
+  const resetPage = () => setPage(0); const speak = (word: string) => { if ("speechSynthesis" in window) { window.speechSynthesis.cancel(); window.speechSynthesis.speak(new SpeechSynthesisUtterance(word)); } };
+  const topics = ["all", "Study", "Daily life", "Communication", "People", "Life skills", "Travel", "Health", "Environment", "Technology", "Description", "Time"];
+  return <AppShell eyebrow="Vocabulary" title="শব্দের study desk">
+    <section className="vocabulary-intro paper-card"><div><p className="card-kicker"><BookOpenCheck size={14} /> Vocabulary study library</p><h2>শব্দ দেখো, বলো,<br /><em>নিজের বাক্যে রাখো।</em></h2><p>২০,০০০+ শব্দের জন্য তৈরি এই library একবারে ছোট একটি page দেখায়—তাই search ও filter দ্রুত থাকে।</p><span className="academy-focus-line">আজকের লক্ষ্য: একটি শব্দ শুনে, বুঝে, নিজের বাক্যে ব্যবহার করা।</span></div><div className="vocabulary-count"><strong>{result?.total ?? "—"}</strong><span>টি matching শব্দ</span></div></section>
+    <section className="vocabulary-controls paper-card" aria-label="Vocabulary filter"><label className="vocab-search"><Search size={18} /><input value={query} onChange={(event) => { setQuery(event.target.value); resetPage(); }} placeholder="শব্দ বা বাংলা অর্থ খুঁজো" /><span>{result ? `${result.total} ফল` : "খোঁজা হচ্ছে"}</span></label><div className="vocabulary-filter-row"><label>Level<select value={level} onChange={(event) => { setLevel(event.target.value as LevelCode | "all"); resetPage(); }}>{levels.map((item) => <option key={item} value={item}>{item === "all" ? "সব level" : item}</option>)}</select></label><label>Topic<select value={topic} onChange={(event) => { setTopic(event.target.value); resetPage(); }}>{topics.map((item) => <option key={item} value={item}>{item === "all" ? "সব topic" : item}</option>)}</select></label><label>Learning status<select value={state} onChange={(event) => { setState(event.target.value as VocabularyMasteryState | "all"); resetPage(); }}>{mastery.map((item) => <option key={item} value={item}>{masteryLabel[item]}</option>)}</select></label></div></section>
+    <section className="vocabulary-library" aria-live="polite" aria-label="Vocabulary study library">{result?.entries.length ? <div className="vocabulary-grid">{result.entries.map(({ item, srsCard }, itemIndex) => <article className="vocab-card paper-card" key={item.id}><header><span>{String(page * 18 + itemIndex + 1).padStart(3, "0")} · {item.partOfSpeech}</span><button type="button" aria-label={`${item.word} শুনুন`} onClick={() => speak(item.word)}><Volume2 size={16} /></button></header><Link href={`/vocabulary/${encodeURIComponent(item.word)}`}><h2>{item.word}</h2></Link><p className="vocab-meaning">{item.meaning}</p><span className="pronunciation">{item.ipa || item.pronunciation}</span><p className="vocab-example">“{item.example}”</p><footer><span>{item.level} · {item.topic}</span><span className={`mastery-pill mastery-${srsCard?.masteryState ?? "new"}`}>{masteryLabel[srsCard?.masteryState ?? "new"]}</span></footer></article>)}</div> : <div className="vocabulary-empty"><BookOpenCheck size={20} /><h2>{result ? "এই filter-এ কোনো শব্দ নেই" : "Vocabulary catalogue তৈরি হচ্ছে"}</h2><p>অন্য level, topic অথবা বাংলা অর্থ দিয়ে আবার খোঁজো।</p></div>}</section>
+    {result && <nav className="corpus-pagination" aria-label="Vocabulary pages"><Button type="button" variant="outline" disabled={page === 0} onClick={() => setPage((value) => Math.max(0, value - 1))}><ChevronLeft size={16} /> আগের</Button><span>পৃষ্ঠা {page + 1} · প্রতি পৃষ্ঠায় 18 শব্দ</span><Button type="button" variant="outline" disabled={!result.hasMore} onClick={() => setPage((value) => value + 1)}>পরের <ChevronRight size={16} /></Button></nav>}
+  </AppShell>;
 }

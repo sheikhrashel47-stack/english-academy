@@ -23,6 +23,7 @@ const LevelPage = lazy(() => import("@/pages/LevelPage"));
 const ChapterPage = lazy(() => import("@/pages/ChapterPage"));
 const LearningPathPage = lazy(() => import("@/pages/LearningPathPage"));
 const GrammarPage = lazy(() => import("@/pages/GrammarPage"));
+const GrammarConceptPage = lazy(() => import("@/pages/GrammarConceptPage"));
 const MistakeBankPage = lazy(() => import("@/pages/MistakeBankPage"));
 const ToolsPage = lazy(() => import("@/pages/ToolsPage"));
 const SkillLabPage = lazy(() => import("@/pages/SkillLabPage"));
@@ -30,6 +31,7 @@ const VocabularyDetailPage = lazy(() => import("@/pages/VocabularyDetailPage"));
 const FlashcardsPage = lazy(() => import("@/pages/FlashcardsPage"));
 const ReviewPage = lazy(() => import("@/pages/ReviewPage"));
 const PrototypeStudioPage = lazy(() => import("@/pages/PrototypeStudioPage"));
+const ContentAdminPage = lazy(() => import("@/pages/ContentAdminPage"));
 
 function Router() {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -55,7 +57,7 @@ function Router() {
         <Route path="/vocabulary/flashcards" component={FlashcardsPage} />
         <Route path="/vocabulary/:word" component={VocabularyDetailPage} />
         <Route path="/vocabulary" component={VocabularyPage} />
-        <Route path="/grammar/:topic" component={GrammarPage} />
+        <Route path="/grammar/:conceptId" component={GrammarConceptPage} />
         <Route path="/grammar" component={GrammarPage} />
         <Route path="/practice/setup" component={PracticePage} />
         <Route path="/practice/session" component={PracticePage} />
@@ -84,6 +86,7 @@ function Router() {
         <Route path="/progress" component={ProgressPage} />
         <Route path="/tools" component={ToolsPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/content-admin" component={ContentAdminPage} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

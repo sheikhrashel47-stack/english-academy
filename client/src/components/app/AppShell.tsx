@@ -41,7 +41,7 @@ const navigationGroups: NavigationGroup[] = [
   {
     label: "শেখা",
     items: [
-      { href: "/course/course-english-foundations", label: "Learning Map", icon: LibraryBig },
+      { href: "/course/course-english-foundations", label: "Study plan", icon: LibraryBig },
       { href: "/practice", label: "Practice", icon: ListChecks },
     ],
   },
@@ -74,7 +74,7 @@ const mobileNavigation: NavigationItem[] = [
 ];
 
 const quickDestinations = [
-  { href: "/learn", label: "Learning map", hint: "Course, level and unit" },
+  { href: "/learn", label: "Study plan", hint: "Course, level and unit" },
   { href: "/practice/setup", label: "Practice setup", hint: "Questions and filters" },
   { href: "/vocabulary", label: "Vocabulary library", hint: "Word search and pronunciation" },
   { href: "/vocabulary/flashcards", label: "Flashcards", hint: "Local spaced review" },

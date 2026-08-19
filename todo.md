@@ -60,3 +60,22 @@
 - [x] Activity/block renderer-এ specified interaction families ও per-block persistence যোগ করা।
 - [x] Resume, continue-learning, real-progress aggregation, assessment feedback ও mistake/review integration সম্পন্ন করা।
 - [x] Domain tests, production build, GitHub Pages deep links ও offline-safe fallback যাচাই করে publish করা।
+
+## Phase 3 vocabulary and grammar engine
+
+- [ ] Phase 3 specification-এর vocabulary, grammar, review, licensing, import ও integration requirements সম্পূর্ণ reconcile করা।
+- [ ] Source-license registry, normalized vocabulary schema, grammar concept schema ও IndexedDB migration তৈরি করা।
+- [ ] JSON/CSV vocabulary importer, validation, duplicate handling, license gate ও import report বাস্তবায়ন করা।
+- [ ] Small legally attributable demonstration dataসহ vocabulary search, filter, compact card ও detail workspace তৈরি করা।
+- [ ] Flashcard, ReviewScheduler abstraction, mastery states, review queue ও contextual vocabulary practice বাস্তবায়ন করা।
+- [ ] Grammar library, concept detail, topic/CEFR filtering, prerequisite path ও grammar practice engine তৈরি করা।
+- [ ] Mistake, review, progress ও learning-path surfaces-এ Phase 3 mastery evidence সমন্বিত করা।
+- [ ] Tests, responsive verification, GitHub Pages deep links, offline-safe behavior ও production publication সম্পন্ন করা।
+
+## Phase 3 large-corpus capacity
+
+- [ ] ২০,০০০+ vocabulary ও ৫০,০০০+ sentence-এর জন্য permissive-license/public-domain source registry ও attribution policy যাচাই করা।
+- [ ] Large JSON/CSV streaming import, indexed normalization, chunked writes ও resumable import report বাস্তবায়ন করা।
+- [ ] IndexedDB search indexes ও paginated query API দিয়ে corpus-scale search/filter performance নিশ্চিত করা।
+- [ ] Demonstration sample, aggregate corpus manifest এবং data-license diagnostics আলাদা রেখে deployed bundle সীমিত রাখা।
+- [ ] ২০,০০০ vocabulary ও ৫০,০০০ sentence-equivalent synthetic-structure benchmark চালিয়ে storage, import ও query performance নথিভুক্ত করা।

@@ -1,4 +1,4 @@
-/** Stable, content-first domain contracts for English Academy Phase 2. */
+/** Emerald Study House / Phase 3: license-aware, offline-first learning contracts for a large corpus. */
 
 export type EntityId = string;
 export type LevelCode = "Pre-A1" | "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
@@ -8,6 +8,9 @@ export type ContentStatus = "draft" | "published" | "archived";
 export type DifficultyBand = "beginner" | "elementary" | "intermediate" | "upper-intermediate" | "advanced";
 export type PrerequisiteKind = "lesson" | "unit" | "level";
 export type LearningEventType = "lesson-started" | "lesson-completed" | "practice" | "review" | "assessment";
+export type VocabularyMasteryState = "new" | "learning" | "familiar" | "strong" | "mastered";
+export type FlashcardRating = "again" | "hard" | "good" | "easy";
+export type SupportedLicense = "MIT" | "Apache-2.0" | "CC0-1.0" | "CC-BY-4.0" | "CC-BY-SA-4.0" | "Public-Domain" | "Other";
 
 export interface Versioned {
   id: EntityId;
@@ -29,46 +32,16 @@ export interface CompletionPolicy {
   allowTestOut?: boolean;
 }
 
-export interface Course extends Versioned {
-  title: string;
-  banglaTitle: string;
-  description: string;
-  levelIds: EntityId[];
-}
-
+export interface Course extends Versioned { title: string; banglaTitle: string; description: string; levelIds: EntityId[]; }
 export interface Level extends Versioned {
-  courseId: EntityId;
-  code: LevelCode;
-  title: string;
-  summary: string;
-  objective?: string;
-  unitIds: EntityId[];
-  order: number;
-  availability?: "available" | "coming-soon";
-  prerequisites?: Prerequisite[];
-  assessmentLessonId?: EntityId;
+  courseId: EntityId; code: LevelCode; title: string; summary: string; objective?: string; unitIds: EntityId[]; order: number;
+  availability?: "available" | "coming-soon"; prerequisites?: Prerequisite[]; assessmentLessonId?: EntityId;
 }
-
 export interface Unit extends Versioned {
-  levelId: EntityId;
-  title: string;
-  summary: string;
-  objective?: string;
-  lessonIds: EntityId[];
-  chapterIds?: EntityId[];
-  order: number;
-  prerequisites?: Prerequisite[];
-  completionPolicy?: CompletionPolicy;
+  levelId: EntityId; title: string; summary: string; objective?: string; lessonIds: EntityId[]; chapterIds?: EntityId[]; order: number;
+  prerequisites?: Prerequisite[]; completionPolicy?: CompletionPolicy;
 }
-
-export interface Chapter extends Versioned {
-  unitId: EntityId;
-  title: string;
-  banglaTitle?: string;
-  summary: string;
-  lessonIds: EntityId[];
-  order: number;
-}
+export interface Chapter extends Versioned { unitId: EntityId; title: string; banglaTitle?: string; summary: string; lessonIds: EntityId[]; order: number; }
 
 export type LessonBlock =
   | { id: EntityId; type: "heading"; text: string }
@@ -88,35 +61,12 @@ export type LessonBlock =
   | { id: EntityId; type: "assessment"; questionIds: EntityId[]; title?: string; minimumScore?: number };
 
 export interface Lesson extends Versioned {
-  unitId: EntityId;
-  chapterId?: EntityId;
-  title: string;
-  banglaTitle: string;
-  objectives: string[];
-  skillFocus: Skill[];
-  estimatedMinutes: number;
-  order: number;
-  blocks: LessonBlock[];
-  vocabularyIds: EntityId[];
-  questionIds: EntityId[];
-  prerequisites?: Prerequisite[];
-  completionPolicy?: CompletionPolicy;
-  difficultyBand?: DifficultyBand;
-  isAssessment?: boolean;
+  unitId: EntityId; chapterId?: EntityId; title: string; banglaTitle: string; objectives: string[]; skillFocus: Skill[]; estimatedMinutes: number; order: number;
+  blocks: LessonBlock[]; vocabularyIds: EntityId[]; questionIds: EntityId[]; prerequisites?: Prerequisite[]; completionPolicy?: CompletionPolicy; difficultyBand?: DifficultyBand; isAssessment?: boolean;
 }
 
 export interface QuestionOption { id: EntityId; text: string; }
-
-export interface BaseQuestion extends Versioned {
-  lessonId: EntityId;
-  prompt: string;
-  banglaPrompt?: string;
-  explanation: string;
-  skill: Skill;
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  tags: string[];
-}
-
+export interface BaseQuestion extends Versioned { lessonId: EntityId; prompt: string; banglaPrompt?: string; explanation: string; skill: Skill; difficulty: 1 | 2 | 3 | 4 | 5; tags: string[]; }
 export interface McqQuestion extends BaseQuestion { type: "mcq"; options: QuestionOption[]; correctOptionId: EntityId; }
 export interface FillBlankQuestion extends BaseQuestion { type: "fill-blank"; acceptedAnswers: string[]; placeholder?: string; }
 export interface SentenceBuilderQuestion extends BaseQuestion { type: "sentence-builder"; tokens: string[]; correctSentence: string; }
@@ -125,10 +75,13 @@ export type Question = McqQuestion | FillBlankQuestion | SentenceBuilderQuestion
 
 export interface VocabularyItem extends Versioned {
   word: string;
+  /** Canonical lower-case lookup key. Imports always normalize this field. */
+  lemma?: string;
   meaning: string;
   definition: string;
   partOfSpeech: string;
   pronunciation: string;
+  ipa?: string;
   example: string;
   topic: string;
   level: LevelCode;
@@ -136,145 +89,73 @@ export interface VocabularyItem extends Versioned {
   synonyms: string[];
   antonyms: string[];
   collocations: string[];
+  wordFamily?: Array<{ word: string; partOfSpeech: string; meaning: string }>;
+  phrasalVerbs?: Array<{ phrase: string; meaning: string; example?: string }>;
+  idioms?: Array<{ phrase: string; meaning: string; example?: string }>;
+  frequencyRank?: number;
+  sourceId?: EntityId;
+  license?: SupportedLicense;
+  licenseUrl?: string;
+  commercialUseAllowed?: boolean;
+  attribution?: string;
   audioAssetId?: EntityId;
   imageAssetId?: EntityId;
 }
 
-export interface GrammarTopic extends Versioned {
-  lessonId: EntityId;
-  title: string;
-  banglaTitle: string;
-  description: string;
-  level: LevelCode;
+/** A reusable source registry retains rights, version and attribution data outside individual records. */
+export interface VocabularySource extends Versioned {
+  name: string; url: string; license: SupportedLicense; licenseUrl?: string; commercialUseAllowed: boolean; attribution: string; dataVersion?: string; notice?: string;
+}
+
+/** A sentence stays separately attributable, so corpus records can be audited and removed independently. */
+export interface VocabularySentence extends Versioned {
+  vocabularyId?: EntityId; text: string; banglaTranslation?: string; language: "en"; sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; commercialUseAllowed: boolean; attribution: string;
+}
+
+export interface GrammarTopic extends Versioned { lessonId: EntityId; title: string; banglaTitle: string; description: string; level: LevelCode; }
+export interface GrammarExample { english: string; bangla: string; note?: string; }
+export interface GrammarConcept extends Versioned {
+  title: string; banglaTitle: string; category: string; level: LevelCode; summary: string;
+  rules: Array<{ rule: string; banglaExplanation: string }>;
+  examples: GrammarExample[];
+  commonMistakes: Array<{ incorrect: string; corrected: string; banglaExplanation: string }>;
+  prerequisites: EntityId[];
+  relatedConceptIds: EntityId[];
+  layeredExplanations: Array<{ audience: "quick" | "foundation" | "deep-dive"; title: string; banglaExplanation: string }>;
+  practiceQuestionIds: EntityId[];
+  sourceId: EntityId;
+  license: SupportedLicense;
+  licenseUrl?: string;
+  commercialUseAllowed: boolean;
+  attribution: string;
 }
 
 export interface UserLessonProgress extends Versioned {
-  userId: EntityId;
-  lessonId: EntityId;
-  completed: boolean;
-  completedAt?: string;
-  startedAt?: string;
-  lastPosition: number;
-  completedBlockIds?: EntityId[];
-  correctCount: number;
-  wrongCount: number;
-  timeSpentSeconds: number;
-  confidence?: "easy" | "okay" | "difficult";
-  lastActivityAt?: string;
+  userId: EntityId; lessonId: EntityId; completed: boolean; completedAt?: string; startedAt?: string; lastPosition: number; completedBlockIds?: EntityId[];
+  correctCount: number; wrongCount: number; timeSpentSeconds: number; confidence?: "easy" | "okay" | "difficult"; lastActivityAt?: string;
 }
-
-export interface UserActivityProgress extends Versioned {
-  userId: EntityId;
-  lessonId: EntityId;
-  blockId: EntityId;
-  completed: boolean;
-  score?: number;
-  confidence?: "easy" | "okay" | "difficult";
-  response?: string;
-  updatedAt: string;
-}
-
+export interface UserActivityProgress extends Versioned { userId: EntityId; lessonId: EntityId; blockId: EntityId; completed: boolean; score?: number; confidence?: "easy" | "okay" | "difficult"; response?: string; updatedAt: string; }
 export interface UserVocabularyProgress extends Versioned {
-  userId: EntityId;
-  vocabularyId: EntityId;
-  learned: boolean;
-  recallCount: number;
-  correctCount: number;
-  wrongCount: number;
-  lastReviewedAt?: string;
+  userId: EntityId; vocabularyId: EntityId; learned: boolean; recallCount: number; correctCount: number; wrongCount: number; lastReviewedAt?: string; masteryState?: VocabularyMasteryState;
+}
+/** Persisted SRS state is separate from content and can evolve without rewriting a 20k-word corpus. */
+export interface SRSCard extends Versioned {
+  userId: EntityId; vocabularyId: EntityId; masteryState: VocabularyMasteryState; nextReviewAt: string; intervalDays: number; easeFactor: number; streak: number; lapses: number; repetitions: number; lastReviewedAt?: string; lastRating?: FlashcardRating;
 }
 
-export interface Attempt extends Versioned {
-  userId: EntityId;
-  questionId: EntityId;
-  lessonId: EntityId;
-  questionType: Question["type"];
-  userAnswer: string;
-  isCorrect: boolean;
-  submittedAt: string;
-}
-
-export interface MistakeRecord extends Versioned {
-  userId: EntityId;
-  questionId: EntityId;
-  userAnswer: string;
-  correctAnswer: string;
-  reason: string;
-  timestamp: string;
-  attemptCount: number;
-  resolved: boolean;
-}
-
+export interface Attempt extends Versioned { userId: EntityId; questionId: EntityId; lessonId: EntityId; questionType: Question["type"]; userAnswer: string; isCorrect: boolean; submittedAt: string; }
+export interface MistakeRecord extends Versioned { userId: EntityId; questionId: EntityId; userAnswer: string; correctAnswer: string; reason: string; timestamp: string; attemptCount: number; resolved: boolean; }
 export interface ReviewItem extends Versioned {
-  userId: EntityId;
-  itemId: EntityId;
-  itemType: "vocabulary" | "question" | "lesson" | "objective";
-  masteryScore: number;
-  confidence: number;
-  attemptCount: number;
-  correctCount: number;
-  wrongCount: number;
-  lastAttemptAt?: string;
-  nextReviewAt: string;
-  reviewLevel: number;
+  userId: EntityId; itemId: EntityId; itemType: "vocabulary" | "question" | "lesson" | "objective"; masteryScore: number; confidence: number; attemptCount: number; correctCount: number; wrongCount: number; lastAttemptAt?: string; nextReviewAt: string; reviewLevel: number;
 }
+export interface ObjectiveProgress extends Versioned { userId: EntityId; lessonId: EntityId; objective: string; state: "introduced" | "practiced" | "reviewed" | "assessed" | "mastered"; }
+export interface Bookmark extends Versioned { userId: EntityId; contentId: EntityId; contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing"; createdAt: string; }
+export interface PersonalNote extends Versioned { userId: EntityId; contentId: EntityId; text: string; }
+export interface LearningSession extends Versioned { userId: EntityId; activity: LearningEventType; lessonId?: EntityId; skill?: Skill; startedAt: string; endedAt?: string; durationSeconds?: number; completed: boolean; }
+export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; lastLessonId?: EntityId; }
+export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
 
-export interface ObjectiveProgress extends Versioned {
-  userId: EntityId;
-  lessonId: EntityId;
-  objective: string;
-  state: "introduced" | "practiced" | "reviewed" | "assessed" | "mastered";
-}
-
-export interface Bookmark extends Versioned {
-  userId: EntityId;
-  contentId: EntityId;
-  contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing";
-  createdAt: string;
-}
-
-export interface PersonalNote extends Versioned {
-  userId: EntityId;
-  contentId: EntityId;
-  text: string;
-}
-
-export interface LearningSession extends Versioned {
-  userId: EntityId;
-  activity: LearningEventType;
-  lessonId?: EntityId;
-  skill?: Skill;
-  startedAt: string;
-  endedAt?: string;
-  durationSeconds?: number;
-  completed: boolean;
-}
-
-export interface AppSettings extends Versioned {
-  theme: "light" | "dark" | "focus";
-  languageMode: LanguageMode;
-  soundEnabled: boolean;
-  animationsEnabled: boolean;
-  reducedMotion: boolean;
-  dailyGoalMinutes: 10 | 15 | 20 | 30;
-  seedVersion?: string;
-  lastLessonId?: EntityId;
-}
-
-export interface WritingDraft extends Versioned {
-  userId: EntityId;
-  promptId: EntityId;
-  text: string;
-  submittedAt?: string;
-}
-
-export type LearningSeed = {
-  courses: Course[];
-  levels: Level[];
-  units: Unit[];
-  chapters: Chapter[];
-  lessons: Lesson[];
-  vocabulary: VocabularyItem[];
-  questions: Question[];
-  grammarTopics: GrammarTopic[];
-};
+export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };
+export type VocabularySearchFilters = { query?: string; level?: LevelCode; topic?: string; partOfSpeech?: string; masteryState?: VocabularyMasteryState; page?: number; pageSize?: number; };
+export type VocabularySearchResult = { entries: Array<{ item: VocabularyItem; progress?: UserVocabularyProgress; srsCard?: SRSCard }>; page: number; pageSize: number; total: number; hasMore: boolean; };
+export type GrammarConceptFilters = { level?: LevelCode; category?: string; page?: number; pageSize?: number; };

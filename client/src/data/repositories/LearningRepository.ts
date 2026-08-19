@@ -1,16 +1,19 @@
 import { AppError } from "@/core/errors/AppError";
 import { logger } from "@/core/services/logger";
 import { importLearningSeed } from "@/data/content/ContentImporter";
+import { validateGrammarConcepts, validateSentenceLicense, validateVocabularyLicense } from "@/data/content/ContentValidator";
+import { importVocabularyPackage, type VocabularyImportReport } from "@/data/content/VocabularyImporter";
 import { phase2Seed } from "@/data/content/phase2Seed";
+import { originalSampleSource, phase3GrammarConcepts, phase3PracticeQuestions, phase3Vocabulary } from "@/data/content/phase3Seed";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
-import { IntervalReviewScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, Attempt, Bookmark, Chapter, GrammarTopic, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, Question, ReviewItem, Skill, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, WritingDraft } from "@/domain/learning/types";
+import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
+import type { AppSettings, Attempt, Bookmark, Chapter, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, Question, ReviewItem, SRSCard, Skill, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase2.0";
+const seedVersion = "phase3.1";
 const timestamp = () => new Date().toISOString();
 
 export type LessonBundle = { lesson: Lesson; vocabulary: VocabularyItem[]; questions: Question[]; progress?: UserLessonProgress; activityProgress: UserActivityProgress[]; bookmarked: boolean; note?: PersonalNote };
@@ -20,6 +23,7 @@ export type VocabularyEntry = { item: VocabularyItem; progress?: UserVocabularyP
 export type MistakeBundle = { record: MistakeRecord; question?: Question };
 export type RoadmapItem = { lesson: Lesson; progress?: UserLessonProgress; unlocked: boolean; completed: boolean; unitId: string; levelId: string };
 export type LearningSummary = { totalLessons: number; completedLessons: number; timeSpentSeconds: number; practicedSkills: Skill[]; currentLevel?: import("@/domain/learning/types").Level; nextLesson?: RoadmapItem; completedAssessments: number; totalAssessments: number };
+export type VocabularyReviewQueue = { overdue: VocabularySearchResult["entries"]; dueToday: VocabularySearchResult["entries"]; newItems: VocabularySearchResult["entries"]; learning: VocabularySearchResult["entries"]; review: VocabularySearchResult["entries"]; mastered: VocabularySearchResult["entries"] };
 
 const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 4, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
@@ -28,6 +32,7 @@ class LearningRepository {
     const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
     if (settings?.seedVersion === seedVersion) return;
     await this.persistCurriculum(phase2Seed);
+    await this.persistPhase3Seed();
     await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
     logger.debug("seed-loaded", { version: seedVersion });
   }
@@ -45,6 +50,18 @@ class LearningRepository {
       ...seed.questions.map((item) => englishAcademyDb.put(stores.questions, item)), ...seed.grammarTopics.map((item) => englishAcademyDb.put(stores.grammarTopics, item)),
     ];
     await Promise.all(writes);
+  }
+
+  private async persistPhase3Seed(): Promise<void> {
+    const curriculumVocabulary = await englishAcademyDb.getAll<VocabularyItem>(stores.vocabulary);
+    const enrichedCurriculumVocabulary = curriculumVocabulary.map((item) => item.sourceId ? item : { ...item, schemaVersion: 5, lemma: item.word.toLocaleLowerCase("en-US"), sourceId: originalSampleSource.id, license: "MIT" as const, licenseUrl: originalSampleSource.licenseUrl, commercialUseAllowed: true, attribution: originalSampleSource.attribution });
+    await Promise.all([
+      englishAcademyDb.put(stores.vocabularySources, originalSampleSource),
+      ...enrichedCurriculumVocabulary.map((item) => englishAcademyDb.put(stores.vocabulary, item)),
+      ...phase3Vocabulary.map((item) => englishAcademyDb.put(stores.vocabulary, item)),
+      ...phase3PracticeQuestions.map((item) => englishAcademyDb.put(stores.questions, item)),
+      ...phase3GrammarConcepts.map((item) => englishAcademyDb.put(stores.grammarConcepts, item)),
+    ]);
   }
 
   async getSettings(): Promise<AppSettings> { await this.seedIfNeeded(); const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId); return { ...defaultSettings(), ...saved, id: settingsId }; }
@@ -128,6 +145,98 @@ class LearningRepository {
     };
   }
 
+  private async entryForVocabulary(item: VocabularyItem) {
+    const [progress, srsCard] = await Promise.all([
+      englishAcademyDb.getByIndex<UserVocabularyProgress>(stores.vocabularyProgress, "userVocabulary", [learnerId, item.id]),
+      englishAcademyDb.getByIndex<SRSCard>(stores.srsCards, "userVocabulary", [learnerId, item.id]),
+    ]);
+    return { item, progress: progress[0], srsCard: srsCard[0] };
+  }
+
+  async searchVocabulary(filters: VocabularySearchFilters = {}): Promise<VocabularySearchResult> {
+    await this.seedIfNeeded();
+    const page = Math.max(0, filters.page ?? 0); const pageSize = Math.min(100, Math.max(10, filters.pageSize ?? 24));
+    const query = filters.query?.trim().toLocaleLowerCase("en-US") ?? "";
+    if (filters.masteryState && filters.masteryState !== "new") {
+      const cards = await englishAcademyDb.getPage<SRSCard>(stores.srsCards, { index: "userMastery", query: [learnerId, filters.masteryState], offset: page * pageSize, limit: pageSize });
+      const entries = (await Promise.all(cards.items.map(async (card) => { const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, card.vocabularyId); return item ? this.entryForVocabulary(item) : undefined; }))).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+      return { entries, page, pageSize, total: cards.total, hasMore: (page + 1) * pageSize < cards.total };
+    }
+    const index = filters.level && filters.topic ? "levelTopic" : filters.level ? "level" : filters.topic ? "topic" : filters.partOfSpeech ? "partOfSpeech" : undefined;
+    const indexedQuery = filters.level && filters.topic ? [filters.level, filters.topic] : filters.level ?? filters.topic ?? filters.partOfSpeech;
+    const result = await englishAcademyDb.getFilteredPage<VocabularyItem>(stores.vocabulary, {
+      index, query: indexedQuery, offset: page * pageSize, limit: pageSize,
+      matches: (item) => {
+        const matchesText = !query || [item.word, item.lemma, item.meaning, item.topic, item.partOfSpeech].some((value) => value?.toLocaleLowerCase("en-US").includes(query));
+        return matchesText && (!filters.level || item.level === filters.level) && (!filters.topic || item.topic === filters.topic) && (!filters.partOfSpeech || item.partOfSpeech === filters.partOfSpeech);
+      },
+    });
+    const entries = await Promise.all(result.items.map((item) => this.entryForVocabulary(item)));
+    const newEntries = filters.masteryState === "new" ? entries.filter((entry) => !entry.srsCard || entry.srsCard.masteryState === "new") : entries;
+    return { entries: newEntries, page, pageSize, total: filters.masteryState === "new" ? newEntries.length : result.total, hasMore: (page + 1) * pageSize < result.total };
+  }
+
+  async getVocabularyDetail(vocabularyId: string) {
+    await this.seedIfNeeded(); const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, vocabularyId);
+    if (!item) throw new AppError("ContentError", "শব্দটি খুঁজে পাওয়া যায়নি।");
+    const [entry, sentences, source] = await Promise.all([this.entryForVocabulary(item), englishAcademyDb.getByIndex<VocabularySentence>(stores.sentences, "vocabularyId", vocabularyId), item.sourceId ? englishAcademyDb.get<VocabularySource>(stores.vocabularySources, item.sourceId) : Promise.resolve(undefined)]);
+    return { ...entry, sentences, source };
+  }
+
+  async getSrsCard(vocabularyId: string): Promise<SRSCard> {
+    await this.seedIfNeeded(); const saved = (await englishAcademyDb.getByIndex<SRSCard>(stores.srsCards, "userVocabulary", [learnerId, vocabularyId]))[0];
+    return saved ?? new VocabularySrsScheduler().createCard(learnerId, vocabularyId);
+  }
+
+  async updateVocabularyMastery(vocabularyId: string, masteryState: SRSCard["masteryState"]): Promise<SRSCard> {
+    const now = timestamp(); const prior = await this.getSrsCard(vocabularyId); const card = { ...prior, updatedAt: now, masteryState, nextReviewAt: masteryState === "mastered" ? new Date(Date.now() + 30 * 86400000).toISOString() : prior.nextReviewAt };
+    await englishAcademyDb.put(stores.srsCards, card); return card;
+  }
+
+  private async getCardsByMastery(masteryState: SRSCard["masteryState"], limit = 12) {
+    const cards = await englishAcademyDb.getPage<SRSCard>(stores.srsCards, { index: "userMastery", query: [learnerId, masteryState], limit });
+    return (await Promise.all(cards.items.map(async (card) => { const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, card.vocabularyId); return item ? this.entryForVocabulary(item) : undefined; }))).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  }
+
+  async getVocabularyReviewQueue(): Promise<VocabularyReviewQueue> {
+    await this.seedIfNeeded(); const now = new Date(); const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
+    const dueCards = await englishAcademyDb.getFilteredPage<SRSCard>(stores.srsCards, { index: "nextReview", query: IDBKeyRange.upperBound(endOfDay.toISOString()), limit: 24, matches: (card) => card.userId === learnerId });
+    const dueEntries = (await Promise.all(dueCards.items.map(async (card) => { const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, card.vocabularyId); return item ? this.entryForVocabulary(item) : undefined; }))).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+    return {
+      overdue: dueEntries.filter((entry) => entry.srsCard && entry.srsCard.nextReviewAt < now.toISOString()), dueToday: dueEntries.filter((entry) => entry.srsCard && entry.srsCard.nextReviewAt >= now.toISOString()),
+      newItems: (await this.searchVocabulary({ masteryState: "new", pageSize: 12 })).entries, learning: await this.getCardsByMastery("learning"), review: [...await this.getCardsByMastery("familiar", 6), ...await this.getCardsByMastery("strong", 6)], mastered: await this.getCardsByMastery("mastered"),
+    };
+  }
+
+  async importVocabularyBatch(input: unknown): Promise<VocabularyImportReport> {
+    await this.seedIfNeeded(); const knownSources = await englishAcademyDb.getAll<VocabularySource>(stores.vocabularySources); const batch = importVocabularyPackage(input, knownSources);
+    const sourceMap = new Map([...knownSources, ...batch.sources].map((source) => [source.id, source]));
+    for (const item of batch.vocabulary) validateVocabularyLicense(item, sourceMap);
+    for (const sentence of batch.sentences) validateSentenceLicense(sentence, sourceMap);
+    const uniqueItems: VocabularyItem[] = [];
+    for (let start = 0; start < batch.vocabulary.length; start += 250) {
+      const chunk = batch.vocabulary.slice(start, start + 250);
+      const existing = await Promise.all(chunk.map((item) => englishAcademyDb.getByIndex<VocabularyItem>(stores.vocabulary, "lemma", item.lemma!)));
+      chunk.forEach((item, index) => { if (existing[index].length) { batch.report.duplicates += 1; batch.report.skipped += 1; batch.report.imported -= 1; } else uniqueItems.push(item); });
+    }
+    await Promise.all([...batch.sources.map((source) => englishAcademyDb.put(stores.vocabularySources, source)), ...uniqueItems.map((item) => englishAcademyDb.put(stores.vocabulary, item)), ...batch.sentences.map((sentence) => englishAcademyDb.put(stores.sentences, sentence))]);
+    return batch.report;
+  }
+
+  async importGrammarBatch(concepts: GrammarConcept[]): Promise<void> {
+    await this.seedIfNeeded(); const [sources, questions] = await Promise.all([englishAcademyDb.getAll<VocabularySource>(stores.vocabularySources), englishAcademyDb.getAll<Question>(stores.questions)]);
+    validateGrammarConcepts(concepts, sources, questions.map((question) => question.id)); await Promise.all(concepts.map((concept) => englishAcademyDb.put(stores.grammarConcepts, concept)));
+  }
+
+  async getGrammarConcepts(filters: GrammarConceptFilters = {}) {
+    await this.seedIfNeeded(); const page = Math.max(0, filters.page ?? 0); const pageSize = Math.min(100, Math.max(8, filters.pageSize ?? 24));
+    const index = filters.level && filters.category ? "levelCategory" : filters.level ? "level" : filters.category ? "category" : undefined; const query = filters.level && filters.category ? [filters.level, filters.category] : filters.level ?? filters.category;
+    const result = await englishAcademyDb.getFilteredPage<GrammarConcept>(stores.grammarConcepts, { index, query, offset: page * pageSize, limit: pageSize, matches: (item) => (!filters.level || item.level === filters.level) && (!filters.category || item.category === filters.category) });
+    return { items: result.items, page, pageSize, total: result.total, hasMore: (page + 1) * pageSize < result.total };
+  }
+
+  async getGrammarConcept(conceptId: string): Promise<GrammarConcept> { await this.seedIfNeeded(); const concept = await englishAcademyDb.get<GrammarConcept>(stores.grammarConcepts, conceptId); if (!concept) throw new AppError("ContentError", "Grammar concept খুঁজে পাওয়া যায়নি।"); return concept; }
+
   async getGrammarTopics(): Promise<GrammarTopic[]> { await this.seedIfNeeded(); return (await englishAcademyDb.getAll<GrammarTopic>(stores.grammarTopics)).sort((a, b) => a.title.localeCompare(b.title)); }
   async getVocabulary(): Promise<VocabularyItem[]> { await this.seedIfNeeded(); return (await englishAcademyDb.getAll<VocabularyItem>(stores.vocabulary)).sort((a, b) => a.word.localeCompare(b.word)); }
   async getVocabularyEntries(): Promise<VocabularyEntry[]> { const [items, progress] = await Promise.all([this.getVocabulary(), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress)]); return items.map((item) => ({ item, progress: progress.find((record) => record.userId === learnerId && record.vocabularyId === item.id) })); }
@@ -172,7 +281,20 @@ class LearningRepository {
   }
 
   private async recordVocabularyRecall(vocabularyId: string, isCorrect: boolean, now: string): Promise<void> { const existing = (await englishAcademyDb.getByIndex<UserVocabularyProgress>(stores.vocabularyProgress, "userVocabulary", [learnerId, vocabularyId]))[0]; await englishAcademyDb.put(stores.vocabularyProgress, { id: existing?.id ?? `vocabulary-${learnerId}-${vocabularyId}`, schemaVersion: 4, updatedAt: now, userId: learnerId, vocabularyId, learned: isCorrect || existing?.learned || false, recallCount: (existing?.recallCount ?? 0) + 1, correctCount: (existing?.correctCount ?? 0) + (isCorrect ? 1 : 0), wrongCount: (existing?.wrongCount ?? 0) + (isCorrect ? 0 : 1), lastReviewedAt: now }); }
-  async recordFlashcardReview(vocabularyId: string, rating: "again" | "hard" | "good" | "easy"): Promise<void> { await this.seedIfNeeded(); const now = timestamp(); const correct = rating === "good" || rating === "easy"; await this.recordVocabularyRecall(vocabularyId, correct, now); const reviewId = `review-vocabulary-${vocabularyId}`; const prior = await englishAcademyDb.get<ReviewItem>(stores.reviewItems, reviewId); const base: ReviewItem = prior ?? { id: reviewId, schemaVersion: 4, updatedAt: now, userId: learnerId, itemId: vocabularyId, itemType: "vocabulary", masteryScore: 0, confidence: 0, attemptCount: 0, correctCount: 0, wrongCount: 0, nextReviewAt: now, reviewLevel: 0 }; const reviewed = rating === "again" ? new IntervalReviewScheduler().recordFailure(base) : new IntervalReviewScheduler().recordSuccess(base); await englishAcademyDb.put(stores.reviewItems, { ...reviewed, updatedAt: now, confidence: rating === "easy" ? 3 : rating === "good" ? 2 : rating === "hard" ? 1 : 0, masteryScore: scoreForAttempts(reviewed.correctCount, reviewed.wrongCount) }); }
+  async recordFlashcardReview(vocabularyId: string, rating: FlashcardRating): Promise<void> {
+    await this.seedIfNeeded(); const now = timestamp(); const correct = rating === "good" || rating === "easy";
+    await this.recordVocabularyRecall(vocabularyId, correct, now);
+    const reviewId = `review-vocabulary-${vocabularyId}`; const prior = await englishAcademyDb.get<ReviewItem>(stores.reviewItems, reviewId);
+    const base: ReviewItem = prior ?? { id: reviewId, schemaVersion: 5, updatedAt: now, userId: learnerId, itemId: vocabularyId, itemType: "vocabulary", masteryScore: 0, confidence: 0, attemptCount: 0, correctCount: 0, wrongCount: 0, nextReviewAt: now, reviewLevel: 0 };
+    const reviewed = rating === "again" ? new IntervalReviewScheduler().recordFailure(base) : new IntervalReviewScheduler().recordSuccess(base);
+    const srsCard = new VocabularySrsScheduler().record(await this.getSrsCard(vocabularyId), rating);
+    const progress = (await englishAcademyDb.getByIndex<UserVocabularyProgress>(stores.vocabularyProgress, "userVocabulary", [learnerId, vocabularyId]))[0];
+    await Promise.all([
+      englishAcademyDb.put(stores.reviewItems, { ...reviewed, schemaVersion: 5, updatedAt: now, confidence: rating === "easy" ? 3 : rating === "good" ? 2 : rating === "hard" ? 1 : 0, masteryScore: scoreForAttempts(reviewed.correctCount, reviewed.wrongCount) }),
+      englishAcademyDb.put(stores.srsCards, srsCard),
+      progress ? englishAcademyDb.put(stores.vocabularyProgress, { ...progress, schemaVersion: 5, updatedAt: now, masteryState: srsCard.masteryState }) : Promise.resolve(),
+    ]);
+  }
 
   async getWritingDraft(promptId: string): Promise<WritingDraft | undefined> { await this.seedIfNeeded(); return (await englishAcademyDb.getByIndex<WritingDraft>(stores.writingDrafts, "userPrompt", [learnerId, promptId]))[0]; }
   async saveWritingDraft(promptId: string, text: string, submitted = false): Promise<WritingDraft> { await this.seedIfNeeded(); const now = timestamp(); const existing = await this.getWritingDraft(promptId); const draft: WritingDraft = { id: existing?.id ?? `draft-${learnerId}-${promptId}`, schemaVersion: 4, updatedAt: now, userId: learnerId, promptId, text, submittedAt: submitted ? now : existing?.submittedAt }; await englishAcademyDb.put(stores.writingDrafts, draft); return draft; }

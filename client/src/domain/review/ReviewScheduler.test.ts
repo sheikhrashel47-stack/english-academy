@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IntervalReviewScheduler } from "./ReviewScheduler";
+import { IntervalReviewScheduler, VocabularySrsScheduler } from "./ReviewScheduler";
 import type { ReviewItem } from "@/domain/learning/types";
 
 const review: ReviewItem = {
@@ -34,5 +34,26 @@ describe("IntervalReviewScheduler", () => {
     expect(next.reviewLevel).toBe(0);
     expect(next.wrongCount).toBe(1);
     expect(next.nextReviewAt).toBe("2026-08-20T00:00:00.000Z");
+  });
+});
+
+describe("VocabularySrsScheduler", () => {
+  it("grows the interval and mastery after successful recall", () => {
+    const scheduler = new VocabularySrsScheduler();
+    const created = scheduler.createCard("learner", "word", new Date("2026-08-19T00:00:00.000Z"));
+    const first = scheduler.record(created, "good", new Date("2026-08-19T00:00:00.000Z"));
+    const next = scheduler.record(first, "easy", new Date("2026-08-20T00:00:00.000Z"));
+    expect(next.intervalDays).toBeGreaterThanOrEqual(3);
+    expect(next.repetitions).toBe(2);
+    expect(next.masteryState).toBe("familiar");
+  });
+
+  it("records a lapse and schedules an immediate recovery review", () => {
+    const scheduler = new VocabularySrsScheduler();
+    const created = scheduler.createCard("learner", "word", new Date("2026-08-19T00:00:00.000Z"));
+    const failed = scheduler.record(created, "again", new Date("2026-08-19T00:00:00.000Z"));
+    expect(failed.lapses).toBe(1);
+    expect(failed.streak).toBe(0);
+    expect(failed.nextReviewAt).toBe("2026-08-19T00:10:00.000Z");
   });
 });
