@@ -17,6 +17,11 @@ const settingsId = "app-settings";
 const seedVersion = "phase4.0";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
+const alphabetLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const letterRange = (letter: string) => {
+  const normalized = letter.trim().slice(0, 1).toLocaleLowerCase("en-US");
+  return normalized ? IDBKeyRange.bound(normalized, `${normalized}\uffff`) : undefined;
+};
 
 type ProductionCorpusPackage = { sources: VocabularySource[]; vocabulary: VocabularyItem[]; sentences: VocabularySentence[]; audit: ProductionCorpusAudit };
 
@@ -212,27 +217,44 @@ class LearningRepository {
     return { item, progress: progress[0], srsCard: srsCard[0] };
   }
 
+  async getVocabularyLetterIndex(): Promise<Record<string, number>> {
+    await this.seedIfNeeded();
+    const counts = await Promise.all(alphabetLetters.map(async (letter) => [
+      letter,
+      await englishAcademyDb.countByIndex(stores.vocabulary, "lemma", letterRange(letter)),
+    ] as const));
+    return Object.fromEntries(counts);
+  }
+
   async searchVocabulary(filters: VocabularySearchFilters = {}): Promise<VocabularySearchResult> {
     await this.seedIfNeeded();
     const page = Math.max(0, filters.page ?? 0); const pageSize = Math.min(100, Math.max(10, filters.pageSize ?? 24));
     const query = filters.query?.trim().toLocaleLowerCase("en-US") ?? "";
-    if (filters.masteryState && filters.masteryState !== "new") {
-      const cards = await englishAcademyDb.getPage<SRSCard>(stores.srsCards, { index: "userMastery", query: [learnerId, filters.masteryState], offset: page * pageSize, limit: pageSize });
-      const entries = (await Promise.all(cards.items.map(async (card) => { const item = await englishAcademyDb.get<VocabularyItem>(stores.vocabulary, card.vocabularyId); return item ? this.entryForVocabulary(item) : undefined; }))).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-      return { entries, page, pageSize, total: cards.total, hasMore: (page + 1) * pageSize < cards.total };
+    const selectedLetter = filters.letter?.trim().slice(0, 1).toLocaleLowerCase("en-US");
+    const index = selectedLetter ? "lemma" : filters.level && filters.topic ? "levelTopic" : filters.level ? "level" : filters.topic ? "topic" : filters.partOfSpeech ? "partOfSpeech" : "lemma";
+    const indexedQuery = selectedLetter ? letterRange(selectedLetter) : filters.level && filters.topic ? [filters.level, filters.topic] : filters.level ?? filters.topic ?? filters.partOfSpeech;
+    const matchesFilters = (item: VocabularyItem) => {
+      const matchesText = !query || [item.word, item.lemma, item.meaning, item.topic, item.partOfSpeech].some((value) => value?.toLocaleLowerCase("en-US").includes(query));
+      const matchesLetter = !selectedLetter || (item.lemma ?? item.word).toLocaleLowerCase("en-US").startsWith(selectedLetter);
+      return matchesText && matchesLetter && (!filters.level || item.level === filters.level) && (!filters.topic || item.topic === filters.topic) && (!filters.partOfSpeech || item.partOfSpeech === filters.partOfSpeech);
+    };
+    if (!filters.masteryState) {
+      const result = await englishAcademyDb.getFilteredPage<VocabularyItem>(stores.vocabulary, { index, query: indexedQuery, offset: page * pageSize, limit: pageSize, matches: matchesFilters });
+      const entries = await Promise.all(result.items.map((item) => this.entryForVocabulary(item)));
+      return { entries, page, pageSize, total: result.total, hasMore: (page + 1) * pageSize < result.total };
     }
-    const index = filters.level && filters.topic ? "levelTopic" : filters.level ? "level" : filters.topic ? "topic" : filters.partOfSpeech ? "partOfSpeech" : undefined;
-    const indexedQuery = filters.level && filters.topic ? [filters.level, filters.topic] : filters.level ?? filters.topic ?? filters.partOfSpeech;
-    const result = await englishAcademyDb.getFilteredPage<VocabularyItem>(stores.vocabulary, {
-      index, query: indexedQuery, offset: page * pageSize, limit: pageSize,
-      matches: (item) => {
-        const matchesText = !query || [item.word, item.lemma, item.meaning, item.topic, item.partOfSpeech].some((value) => value?.toLocaleLowerCase("en-US").includes(query));
-        return matchesText && (!filters.level || item.level === filters.level) && (!filters.topic || item.topic === filters.topic) && (!filters.partOfSpeech || item.partOfSpeech === filters.partOfSpeech);
-      },
+    const [matchingVocabulary, learnerCards] = await Promise.all([
+      englishAcademyDb.getFilteredPage<VocabularyItem>(stores.vocabulary, { index, query: indexedQuery, offset: 0, limit: Number.MAX_SAFE_INTEGER, matches: matchesFilters }),
+      englishAcademyDb.getByIndexRange<SRSCard>(stores.srsCards, "userVocabulary", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"])),
+    ]);
+    const masteryByVocabularyId = new Map(learnerCards.map((card) => [card.vocabularyId, card.masteryState]));
+    const matchingItems = matchingVocabulary.items.filter((item) => {
+      const masteryState = masteryByVocabularyId.get(item.id);
+      return filters.masteryState === "new" ? !masteryState || masteryState === "new" : masteryState === filters.masteryState;
     });
-    const entries = await Promise.all(result.items.map((item) => this.entryForVocabulary(item)));
-    const newEntries = filters.masteryState === "new" ? entries.filter((entry) => !entry.srsCard || entry.srsCard.masteryState === "new") : entries;
-    return { entries: newEntries, page, pageSize, total: filters.masteryState === "new" ? newEntries.length : result.total, hasMore: (page + 1) * pageSize < result.total };
+    const start = page * pageSize;
+    const entries = await Promise.all(matchingItems.slice(start, start + pageSize).map((item) => this.entryForVocabulary(item)));
+    return { entries, page, pageSize, total: matchingItems.length, hasMore: start + pageSize < matchingItems.length };
   }
 
   async getVocabularyDetail(vocabularyId: string, sentencePage = 0, sentencePageSize = 6) {

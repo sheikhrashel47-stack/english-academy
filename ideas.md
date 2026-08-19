@@ -77,3 +77,6 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - Every library, study-note and corpus-control screen places one factual learning structure close to its main action: a CEFR context line, learning-ledger row, mastery cue or provenance register.
 - English names the learning object; Bangla supplies the supporting instruction. Mixed-language display copy is only used where it improves comprehension of the task.
 - Empty and developer-only views present the next safe action and a quiet provenance or study-status note rather than a generic placeholder.
+- Vocabulary catalogue screens use library, register, ledger or CEFR-connected study language only; “Atlas” terminology is excluded.
+- The A–Z rail remains secondary navigation. A factual CEFR-ledger cue is visually present before filters and word cards.
+- Library cards do not present placeholder-like examples as teaching material. Learners follow the entry route for attributed usage sentences and detailed study context.

@@ -12,6 +12,7 @@ export const learningUseCases = {
   getVocabulary: () => learningRepository.getVocabulary(),
   getVocabularyEntries: () => learningRepository.getVocabularyEntries(),
   searchVocabulary: (filters?: Parameters<typeof learningRepository.searchVocabulary>[0]) => learningRepository.searchVocabulary(filters),
+  getVocabularyLetterIndex: () => learningRepository.getVocabularyLetterIndex(),
   getVocabularyDetail: (vocabularyId: string) => learningRepository.getVocabularyDetail(vocabularyId),
   getVocabularySentences: (vocabularyId: string, page?: number, pageSize?: number) => learningRepository.getVocabularySentences(vocabularyId, page, pageSize),
   getVocabularyReviewQueue: () => learningRepository.getVocabularyReviewQueue(),

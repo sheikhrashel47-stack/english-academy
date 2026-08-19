@@ -103,3 +103,10 @@
 - [ ] GitHub Pages base path, managed corpus URL এবং mobile network request পরীক্ষা করে ১৬৩-word fallback-এর কারণ শনাক্ত করা।
 - [ ] Production corpus fetch, retry, cache-busting এবং IndexedDB first-load migration ঠিক করে ২০,৬৬৫-word catalogue নিশ্চিত করা।
 - [ ] Mobile browser-এ complete corpus count, paginated loading ও refresh persistence যাচাই করে corrected release publish করা।
+
+## A–Z complete vocabulary browser
+
+- [x] A–Z initial index এবং প্রতিটি letter-এর exact vocabulary total IndexedDB cursor query দিয়ে তৈরি করা।
+- [x] Vocabulary page-এ All words, A–Z category chips, category total এবং active-filter state যোগ করা।
+- [x] ২০,০০০+ শব্দ page-by-page browse, name/Bangla meaning search এবং letter-filter একসঙ্গে কাজ করছে নিশ্চিত করা।
+- [x] Mobile responsive A–Z navigation, pagination এবং no-result state যাচাই করে GitHub Pages release publish করা।

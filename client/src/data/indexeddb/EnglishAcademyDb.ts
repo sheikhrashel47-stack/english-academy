@@ -63,6 +63,9 @@ class EnglishAcademyDb {
   async getAll<T>(store: StoreName): Promise<T[]> { return this.run<T[]>(store, "readonly", (objectStore) => objectStore.getAll()); }
   async getByIndex<T>(store: StoreName, index: string, key: IDBValidKey): Promise<T[]> { return this.run<T[]>(store, "readonly", (objectStore) => objectStore.index(index).getAll(key)); }
   async getByIndexRange<T>(store: StoreName, index: string, range: IDBKeyRange, limit?: number): Promise<T[]> { return this.run<T[]>(store, "readonly", (objectStore) => objectStore.index(index).getAll(range, limit)); }
+  async countByIndex(store: StoreName, index: string, query?: IDBValidKey | IDBKeyRange): Promise<number> {
+    return this.run<number>(store, "readonly", (objectStore) => query === undefined ? objectStore.index(index).count() : objectStore.index(index).count(query));
+  }
   async getPage<T>(store: StoreName, options: { index?: string; query?: IDBValidKey | IDBKeyRange | null; offset?: number; limit: number; direction?: IDBCursorDirection } ): Promise<{ items: T[]; total: number }> {
     const db = await this.open();
     return new Promise((resolve, reject) => {

@@ -176,6 +176,6 @@ export interface AppSettings extends Versioned { theme: "light" | "dark" | "focu
 export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
 
 export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };
-export type VocabularySearchFilters = { query?: string; level?: LevelCode; topic?: string; partOfSpeech?: string; masteryState?: VocabularyMasteryState; page?: number; pageSize?: number; };
+export type VocabularySearchFilters = { query?: string; letter?: string; level?: LevelCode; topic?: string; partOfSpeech?: string; masteryState?: VocabularyMasteryState; page?: number; pageSize?: number; };
 export type VocabularySearchResult = { entries: Array<{ item: VocabularyItem; progress?: UserVocabularyProgress; srsCard?: SRSCard }>; page: number; pageSize: number; total: number; hasMore: boolean; };
 export type GrammarConceptFilters = { level?: LevelCode; category?: string; page?: number; pageSize?: number; };
