@@ -149,7 +149,7 @@
 - [x] Local bookmarks, notes, recently viewed, continue-reading ও rule-based recommendation integration তৈরি করা।
 - [x] Accessibility, mobile/offline UX, source-license diagnostics, tests, performance ও production build যাচাই করা।
 - [x] Phase 8 supported workflows, sample-data boundary ও limitations নথিবদ্ধ করা।
-- [ ] Authenticated GitHub Pages release চালিয়ে Phase 8 public Library routes যাচাই করা।
+- [x] Authenticated GitHub Pages release চালিয়ে Phase 8 public Library routes যাচাই করা।
 
 ## Phase 7 personal learning, gamification and motivation engine — priority before Phase 8
 

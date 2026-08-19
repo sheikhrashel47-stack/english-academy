@@ -24,7 +24,7 @@ Library resources and search tokens are seeded into IndexedDB v10. Saved resourc
 | Automated regression | Passed: 11 test files, 30 tests (`pnpm test`) |
 | GitHub Pages packaging | Passed (`GITHUB_ACTIONS=true pnpm build`) |
 | Interface review | Desktop and 375px mobile inspections completed after the applied reference-ledger refinement |
-| GitHub Pages publication | Initial artifact deployed successfully; corrected startup build is ready for republishing and final fresh-route verification |
+| GitHub Pages publication | Corrected artifact published successfully; public fresh `/library` route verified with all 21 reference records |
 
 ## Interface Review Record
 
@@ -32,4 +32,4 @@ The final visual pass strengthened the **English Academy reference ledger** rath
 
 ## Publication Verification Note
 
-The initial Phase 8 GitHub Pages artifact deployment completed successfully, but a fresh production visit to `/library` remained at the local-index loading state. The local seed/read chain was diagnosed and corrected: the migration now avoids replaying the existing 20,000+ licensed vocabulary records, and a fresh development session completed the Phase 8 seed and rendered all 21 reference resources. The corrected commit is pending GitHub Pages republication and one final fresh-route verification.
+The initial Phase 8 GitHub Pages artifact deployment completed successfully, but a fresh production visit to `/library` remained at the local-index loading state. The local seed/read chain was diagnosed and corrected: the migration now avoids replaying the existing 20,000+ licensed vocabulary records, and a fresh development session completed the Phase 8 seed and rendered all 21 reference resources. The corrected build was published successfully through GitHub Pages Actions run [#32252720804](https://github.com/sheikhrashel47-stack/english-academy/actions/runs/32252720804). A new public visit to [`/library`](https://sheikhrashel47-stack.github.io/english-academy/library) rendered the full 21-item catalogue, all 17 category paths and the CEFR/local-provenance reference ledger.
