@@ -17,16 +17,23 @@ const ProgressPage = lazy(() => import("@/pages/ProgressPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const CoursePage = lazy(() => import("@/pages/CoursePage"));
 const PracticePage = lazy(() => import("@/pages/PracticePage"));
+const UnitPage = lazy(() => import("@/pages/UnitPage"));
+const GrammarPage = lazy(() => import("@/pages/GrammarPage"));
+const MistakeBankPage = lazy(() => import("@/pages/MistakeBankPage"));
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/course" component={CoursePage} />
       <Route path="/course/:courseId" component={CoursePage} />
+      <Route path="/unit/:unitId" component={UnitPage} />
       <Route path="/lesson/:lessonId" component={LessonPage} />
       <Route path="/vocabulary" component={VocabularyPage} />
+      <Route path="/grammar" component={GrammarPage} />
       <Route path="/practice" component={PracticePage} />
+      <Route path="/mistakes" component={MistakeBankPage} />
       <Route path="/progress" component={ProgressPage} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/404" component={NotFound} />

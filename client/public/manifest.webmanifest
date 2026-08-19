@@ -1,0 +1,19 @@
+{
+  "name": "English Academy — Learner’s Atlas",
+  "short_name": "English Academy",
+  "description": "বাংলাভাষী শিক্ষার্থীদের জন্য offline-ready ইংরেজি শেখার পথ।",
+  "lang": "bn",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F5F0E6",
+  "theme_color": "#F5F0E6",
+  "icons": [
+    {
+      "src": "https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

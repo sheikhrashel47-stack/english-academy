@@ -47,7 +47,7 @@ export default function Dashboard() {
                 <Play size={16} fill="currentColor" /> {current ? "পাঠে ফিরে যাও" : "পথ প্রস্তুত হচ্ছে"}
               </Button>
             </div>
-            <img className="hero-map" src="/manus-storage/english-academy-hero-map_cc122ed6.jpg" alt="ইংরেজি শেখার একটি চিত্রিত পথ" />
+            <img className="hero-map" src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/kRctOjkIblDGTRRF.jpg" alt="ইংরেজি শেখার একটি চিত্রিত পথ" />
           </div>
 
           <section className="trail-panel paper-card">
@@ -79,7 +79,7 @@ export default function Dashboard() {
             <ArrowRight size={16} />
           </button>
           <section className="study-visual" aria-label="মনোযোগী শেখার পরিবেশ">
-            <img src="/manus-storage/english-academy-study-desk_6b83af86.jpg" alt="নোটবুক, হেডফোন ও পড়ার সরঞ্জামের চিত্র" />
+            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/BixeMKhCdFfWHJid.jpg" alt="নোটবুক, হেডফোন ও পড়ার সরঞ্জামের চিত্র" />
             <div><p>আজকের ছোট প্রস্তুতি</p><strong>শুনো, বলো, মনে রাখো।</strong></div>
           </section>
         </aside>

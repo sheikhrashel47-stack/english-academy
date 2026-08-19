@@ -5,12 +5,14 @@
 import { Link, useLocation } from "wouter";
 import {
   BookOpen,
+  BookMarked,
   ChartNoAxesCombined,
   ChevronRight,
   CircleHelp,
   GraduationCap,
   LibraryBig,
   ListChecks,
+  RotateCcw,
   Map,
   Menu,
   Settings,
@@ -30,11 +32,15 @@ type AppShellProps = {
 
 const navigation = [
   { href: "/dashboard", label: "আমার পথ", icon: Map },
-  { href: "/course/a1-foundations", label: "পাঠ্যপথ", icon: LibraryBig },
+  { href: "/course/course-english-foundations", label: "পাঠ্যপথ", icon: LibraryBig },
   { href: "/practice", label: "অনুশীলন", icon: ListChecks },
   { href: "/vocabulary", label: "শব্দভাণ্ডার", icon: BookOpen },
+  { href: "/grammar", label: "Grammar", icon: BookMarked },
+  { href: "/mistakes", label: "Mistake Bank", icon: RotateCcw },
   { href: "/progress", label: "অগ্রগতি", icon: ChartNoAxesCombined },
 ];
+
+const mobileNavigation = [navigation[0], navigation[1], navigation[2], navigation[4], navigation[5]];
 
 export function AppShell({ children, title, eyebrow }: AppShellProps) {
   const [location] = useLocation();
@@ -43,7 +49,7 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
   const sidebar = (
     <aside className="app-sidebar">
       <Link href="/dashboard" className="brand-lockup" onClick={() => setOpen(false)}>
-        <img src="/manus-storage/english-academy-logo_718c6600.png" alt="English Academy" className="brand-mark" />
+        <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="English Academy" className="brand-mark" />
         <span className="brand-type">
           <strong>English</strong>
           <em>Academy</em>
@@ -89,6 +95,10 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
           <Button className="mobile-menu" variant="ghost" size="icon" onClick={() => setOpen((value) => !value)} aria-label="নেভিগেশন খুলুন">
             {open ? <X size={22} /> : <Menu size={22} />}
           </Button>
+          <Link href="/dashboard" className="mobile-brand-lockup" aria-label="English Academy dashboard">
+            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="" />
+            <span>EA</span>
+          </Link>
           <div className="page-heading">
             {eyebrow && <span className="eyebrow">{eyebrow}</span>}
             {title && <h1>{title}</h1>}
@@ -102,6 +112,13 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
         </header>
 
         <div className="content-stage">{children}</div>
+        <nav className="mobile-bottom-nav" aria-label="দ্রুত নেভিগেশন">
+          {mobileNavigation.map((item) => {
+            const Icon = item.icon;
+            const active = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
+            return <Link key={item.href} href={item.href} className={cn("mobile-bottom-link", active && "mobile-bottom-link-active")}><Icon size={18} /><span>{item.label}</span></Link>;
+          })}
+        </nav>
       </main>
     </div>
   );

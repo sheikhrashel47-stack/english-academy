@@ -206,6 +206,7 @@ function vitePluginStorageProxy(): Plugin {
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
 
 export default defineConfig({
+  base: process.env.GITHUB_ACTIONS ? "/english-academy/" : "/",
   plugins,
   resolve: {
     alias: {
@@ -219,6 +220,14 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-runtime": ["react", "react-dom", "wouter"],
+          "ui-runtime": ["@radix-ui/react-alert-dialog", "@radix-ui/react-slot", "lucide-react", "sonner"],
+        },
+      },
+    },
   },
   server: {
     port: 3000,
