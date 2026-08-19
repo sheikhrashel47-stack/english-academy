@@ -440,17 +440,20 @@ class LearningRepository {
   async getSkillActivities(filters: SkillActivityFilters = {}): Promise<SkillActivityPage> {
     await this.seedIfNeeded({ waitForCorpus: false });
     const page = Math.max(1, filters.page ?? 1); const pageSize = Math.min(30, Math.max(1, filters.pageSize ?? 12));
-    let index: string | undefined; let query: IDBValidKey | IDBKeyRange | undefined;
+    let index: string | undefined; let query: IDBValidKey | undefined;
     if (filters.skill && filters.level) { index = "skillLevel"; query = [filters.skill, filters.level]; }
     else if (filters.skill && filters.stage) { index = "skillStage"; query = [filters.skill, filters.stage]; }
     else if (filters.skill) { index = "skill"; query = filters.skill; }
     else if (filters.level) { index = "level"; query = filters.level; }
     else if (filters.stage) { index = "stage"; query = filters.stage; }
-    const result = await englishAcademyDb.getFilteredPage<SkillActivity>(stores.skillActivities, {
-      index, query, offset: (page - 1) * pageSize, limit: pageSize,
-      matches: (activity) => (!filters.skill || activity.skill === filters.skill) && (!filters.level || activity.level === filters.level) && (!filters.stage || activity.stage === filters.stage) && (!filters.topic || activity.topic === filters.topic),
-    });
-    return { activities: result.items, page, pageSize, total: result.total, hasMore: page * pageSize < result.total };
+    // The compact local lab catalogue is intentionally capped at a small first-run set.
+    // Indexed retrieval avoids long-lived cursor transactions in fresh GitHub Pages sessions.
+    const candidates = index ? await englishAcademyDb.getByIndex<SkillActivity>(stores.skillActivities, index, query!) : await englishAcademyDb.getAll<SkillActivity>(stores.skillActivities);
+    const filtered = candidates
+      .filter((activity) => (!filters.skill || activity.skill === filters.skill) && (!filters.level || activity.level === filters.level) && (!filters.stage || activity.stage === filters.stage) && (!filters.topic || activity.topic === filters.topic))
+      .sort((a, b) => a.title.localeCompare(b.title));
+    const offset = (page - 1) * pageSize;
+    return { activities: filtered.slice(offset, offset + pageSize), page, pageSize, total: filtered.length, hasMore: page * pageSize < filtered.length };
   }
   async getSkillActivity(activityId: string): Promise<SkillActivity | undefined> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.get<SkillActivity>(stores.skillActivities, activityId); }
   async getPhrases(filters: { topic?: string; level?: import("@/domain/learning/types").LevelCode } = {}): Promise<Phrase[]> {
