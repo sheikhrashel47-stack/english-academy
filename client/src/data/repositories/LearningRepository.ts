@@ -33,6 +33,8 @@ export type CorpusSnapshot = { vocabulary: number; sentences: number; grammar: n
 const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 5, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
 class LearningRepository {
+  private productionCorpusBootstrap?: Promise<void>;
+
   async seedIfNeeded(): Promise<void> {
     const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
     if (settings?.seedVersion !== seedVersion) {
@@ -76,6 +78,15 @@ class LearningRepository {
     if (!manifest.url) return;
     const settings = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId);
     if (settings?.corpusVersion === manifest.version) return;
+    if (!this.productionCorpusBootstrap) {
+      this.productionCorpusBootstrap = this.downloadProductionCorpus(manifest, settings).finally(() => {
+        this.productionCorpusBootstrap = undefined;
+      });
+    }
+    await this.productionCorpusBootstrap;
+  }
+
+  private async downloadProductionCorpus(manifest: typeof productionCorpusManifest, settings?: AppSettings): Promise<void> {
     try {
       const response = await fetch(manifest.url);
       if (!response.ok) throw new AppError("ContentError", `Corpus package পাওয়া যায়নি (${response.status})।`);
