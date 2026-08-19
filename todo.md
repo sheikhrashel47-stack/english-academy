@@ -8,5 +8,5 @@
 - [x] Unit, grammar ও mistake-bank route; mobile navigation; settings import/export/reset flow বাস্তবায়ন করা।
 - [x] PWA foundation ও GitHub Pages Actions workflow যোগ করা।
 - [x] Type check, automated test, production build, mobile screenshot এবং persisted workflow যাচাই করা।
-- [ ] Clean Git commit ও GitHub push সম্পন্ন করা।
+- [x] Clean Git commit ও GitHub push সম্পন্ন করা।
 - [ ] Checkpoint তৈরি করে Phase 1 ফলাফল জানানো।
