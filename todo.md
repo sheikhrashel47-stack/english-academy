@@ -10,3 +10,21 @@
 - [x] Type check, automated test, production build, mobile screenshot এবং persisted workflow যাচাই করা।
 - [x] Clean Git commit ও GitHub push সম্পন্ন করা।
 - [ ] Checkpoint তৈরি করে Phase 1 ফলাফল জানানো।
+
+## GitHub Pages publication
+
+- [ ] Existing GitHub Pages deployment pattern ও English Academy repository settings যাচাই করা।
+- [ ] English Academy-এর GitHub Pages publishing source সক্রিয় করে Actions deployment চালানো।
+- [ ] Published GitHub Pages URL খুলে production rendering নিশ্চিত করা।
+
+## 404 diagnosis
+
+- [x] Reported 404 URL এবং Manus deployment URL পৃথকভাবে পরীক্ষা করা।
+- [x] GitHub Pages-এর private-repository limitation অথবা live-site configuration error শনাক্ত করা।
+- [x] কার্যকর live URL নিশ্চিত করে ব্যবহার নির্দেশনা দেওয়া।
+
+## Public GitHub Pages launch
+
+- [ ] Existing `english-academy` repository-র visibility public করা।
+- [ ] GitHub Pages source হিসেবে Actions deployment সক্রিয় করা।
+- [ ] Published GitHub Pages URL খুলে application rendering ও route fallback যাচাই করা।

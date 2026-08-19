@@ -1,6 +1,9 @@
 name: Build GitHub Pages artifact
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -17,13 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: cp dist/public/index.html dist/public/404.html
