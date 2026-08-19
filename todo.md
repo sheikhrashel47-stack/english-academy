@@ -97,3 +97,9 @@
 - [ ] Diagnostic result অনুযায়ী persisted target level, study intensity ও personalised lesson/vocabulary review path তৈরি করা।
 - [ ] Usage-sentence view, audio download/playback, diagnostic completion ও personalised path-এর regression এবং responsive validation করা।
 - [ ] GitHub Pages-এ personalised corpus-learning release publish ও production deep-link যাচাই করা。
+
+## Production corpus bootstrap repair
+
+- [ ] GitHub Pages base path, managed corpus URL এবং mobile network request পরীক্ষা করে ১৬৩-word fallback-এর কারণ শনাক্ত করা।
+- [ ] Production corpus fetch, retry, cache-busting এবং IndexedDB first-load migration ঠিক করে ২০,৬৬৫-word catalogue নিশ্চিত করা।
+- [ ] Mobile browser-এ complete corpus count, paginated loading ও refresh persistence যাচাই করে corrected release publish করা।

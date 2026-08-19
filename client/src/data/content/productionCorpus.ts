@@ -16,8 +16,10 @@ export type ProductionCorpusManifest = {
 
 /** Replaced with the immutable project-storage URL by the release preparation step. */
 export const productionCorpusManifest: ProductionCorpusManifest = {
-  url: "/manus-storage/english-academy-phase3-licensed-corpus_a1a62db5.json",
-  version: "phase3.2-licensed-corpus",
+  // GitHub Pages serves the app from a different origin; the corpus remains on the
+  // public, CORS-enabled project storage origin and is imported into IndexedDB once.
+  url: "https://engacademy-5pvsk4cz.manus.space/manus-storage/english-academy-phase3-licensed-corpus_a1a62db5.json",
+  version: "phase3.3-licensed-corpus",
   expected: {
     vocabularyCount: 20500,
     sentenceCount: 50000,
