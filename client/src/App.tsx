@@ -6,7 +6,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Router as WouterRouter, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { initializeLearningApp } from "@/app/bootstrap/initializeLearningApp";
@@ -22,23 +22,27 @@ const GrammarPage = lazy(() => import("@/pages/GrammarPage"));
 const MistakeBankPage = lazy(() => import("@/pages/MistakeBankPage"));
 
 function Router() {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
   return (
-    <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/course" component={CoursePage} />
-      <Route path="/course/:courseId" component={CoursePage} />
-      <Route path="/unit/:unitId" component={UnitPage} />
-      <Route path="/lesson/:lessonId" component={LessonPage} />
-      <Route path="/vocabulary" component={VocabularyPage} />
-      <Route path="/grammar" component={GrammarPage} />
-      <Route path="/practice" component={PracticePage} />
-      <Route path="/mistakes" component={MistakeBankPage} />
-      <Route path="/progress" component={ProgressPage} />
-      <Route path="/settings" component={SettingsPage} />
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+    <WouterRouter base={base || undefined}>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/course" component={CoursePage} />
+        <Route path="/course/:courseId" component={CoursePage} />
+        <Route path="/unit/:unitId" component={UnitPage} />
+        <Route path="/lesson/:lessonId" component={LessonPage} />
+        <Route path="/vocabulary" component={VocabularyPage} />
+        <Route path="/grammar" component={GrammarPage} />
+        <Route path="/practice" component={PracticePage} />
+        <Route path="/mistakes" component={MistakeBankPage} />
+        <Route path="/progress" component={ProgressPage} />
+        <Route path="/settings" component={SettingsPage} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </WouterRouter>
   );
 }
 
