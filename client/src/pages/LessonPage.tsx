@@ -16,7 +16,14 @@ export default function LessonPage() {
   const completedBlockIds = useMemo(() => new Set([...(bundle?.progress?.completedBlockIds ?? []), ...(bundle?.activityProgress.filter((item) => item.completed).map((item) => item.blockId) ?? [])]), [bundle]);
   if (!bundle) return <AppShell eyebrow="পাঠ লোড হচ্ছে" title="একটু অপেক্ষা করো"><div className="loading-sheet">তোমার পাঠ প্রস্তুত করা হচ্ছে…</div></AppShell>;
   const { lesson, questions, vocabulary } = bundle; const totalBlocks = lesson.completionPolicy?.requiredBlockIds?.length ?? Math.max(1, lesson.blocks.length); const completedBlocks = lesson.completionPolicy?.requiredBlockIds ? lesson.completionPolicy.requiredBlockIds.filter((id) => completedBlockIds.has(id)).length : completedBlockIds.size; const progressPercent = Math.min(100, Math.round((completedBlocks / totalBlocks) * 100));
-  const saveActivity = (blockId: string, response?: string, score?: number, confidence?: "easy" | "okay" | "difficult") => { void learningUseCases.recordActivity(lesson.id, blockId, response, score, confidence).then(() => setBundle((current) => current ? { ...current, activityProgress: [...current.activityProgress.filter((item) => item.blockId !== blockId), { id: `ui-${blockId}`, schemaVersion: 4, updatedAt: new Date().toISOString(), userId: "local-learner", lessonId: lesson.id, blockId, completed: true, response, score, confidence }] } : current)); };
+  const saveActivity = (blockId: string, response?: string, score?: number, confidence?: "easy" | "okay" | "difficult") => {
+    const requiredBlock = lesson.completionPolicy?.requiredBlockIds ? lesson.completionPolicy.requiredBlockIds.includes(blockId) : true;
+    const finishesLesson = requiredBlock && !completedBlockIds.has(blockId) && completedBlocks + 1 >= totalBlocks;
+    void learningUseCases.recordActivity(lesson.id, blockId, response, score, confidence).then(async () => {
+      if (finishesLesson) await learningUseCases.applyPersonalLearningEvent({ eventKey: `lesson-completed:${lesson.id}`, type: "lesson-completed", occurredAt: new Date().toISOString(), relatedContentId: lesson.id, skill: lesson.skillFocus[0], minutes: lesson.estimatedMinutes, metadata: { lessonId: lesson.id } }).catch(() => undefined);
+      setBundle((current) => current ? { ...current, activityProgress: [...current.activityProgress.filter((item) => item.blockId !== blockId), { id: `ui-${blockId}`, schemaVersion: 4, updatedAt: new Date().toISOString(), userId: "local-learner", lessonId: lesson.id, blockId, completed: true, response, score, confidence }] } : current);
+    });
+  };
   const answerQuestion = (blockId: string, isCorrect: boolean) => { setAnswered((value) => value + 1); saveActivity(blockId, isCorrect ? "correct" : "retry", isCorrect ? 100 : 0); };
   const saveNote = async () => { await learningUseCases.saveNote(lesson.id, note); setNoteSaved(true); };
   const toggleBookmark = async () => { const bookmarked = await learningUseCases.toggleBookmark(lesson.id, "lesson"); setBundle((current) => current ? { ...current, bookmarked } : current); };

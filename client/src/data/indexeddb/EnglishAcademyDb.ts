@@ -1,7 +1,7 @@
 import { AppError } from "@/core/errors/AppError";
 
 export const DB_NAME = "english-academy";
-export const DB_VERSION = 7;
+export const DB_VERSION = 9;
 
 export const stores = {
   courses: "courses", levels: "levels", units: "units", chapters: "chapters", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
@@ -10,6 +10,7 @@ export const stores = {
   reviewItems: "reviewItems", objectives: "objectives", bookmarks: "bookmarks", notes: "notes", sessions: "sessions", settings: "settings", writingDrafts: "writingDrafts",
   skillActivities: "skillActivities", skillSources: "skillSources", phrases: "phrases", skillAttempts: "skillAttempts", skillErrors: "skillErrors", skillMastery: "skillMastery",
   assessmentSources: "assessmentSources", assessmentQuestions: "assessmentQuestions", assessmentBlueprints: "assessmentBlueprints", assessmentSessions: "assessmentSessions", assessmentAnswers: "assessmentAnswers", assessmentResults: "assessmentResults", educationalCertificates: "educationalCertificates",
+  personalProfiles: "personalProfiles", learningGoals: "learningGoals", personalLearningEvents: "personalLearningEvents", xpLedger: "xpLedger", studyDays: "studyDays", achievementDefinitions: "achievementDefinitions", achievementProgress: "achievementProgress", dailyStudyPlans: "dailyStudyPlans",
 } as const;
 
 export type StoreName = (typeof stores)[keyof typeof stores];
@@ -72,6 +73,14 @@ class EnglishAcademyDb {
     const assessmentAnswerStore = create(stores.assessmentAnswers); index(assessmentAnswerStore, "sessionId", "sessionId"); index(assessmentAnswerStore, "sessionQuestion", ["sessionId", "questionId"], true);
     const assessmentResultStore = create(stores.assessmentResults); index(assessmentResultStore, "userCompleted", ["userId", "completedAt"]); index(assessmentResultStore, "userBlueprint", ["userId", "blueprintId"]); index(assessmentResultStore, "assessmentType", "assessmentType");
     const certificateStore = create(stores.educationalCertificates); index(certificateStore, "userIssued", ["userId", "issuedAt"]); index(certificateStore, "certificateNumber", "certificateNumber", true);
+    const profileStore = create(stores.personalProfiles); index(profileStore, "userId", "userId", true);
+    const goalStore = create(stores.learningGoals); index(goalStore, "userPeriodStatus", ["userId", "period", "goalStatus"]); index(goalStore, "userEndsOn", ["userId", "endsOn"]);
+    const personalEventStore = create(stores.personalLearningEvents); index(personalEventStore, "userOccurred", ["userId", "occurredAt"]); index(personalEventStore, "userEventKey", ["userId", "eventKey"], true); index(personalEventStore, "type", "type");
+    const xpLedgerStore = create(stores.xpLedger); index(xpLedgerStore, "userOccurred", ["userId", "occurredAt"]); index(xpLedgerStore, "eventId", "eventId", true);
+    const studyDayStore = create(stores.studyDays); index(studyDayStore, "userDate", ["userId", "date"], true);
+    const achievementDefinitionStore = create(stores.achievementDefinitions); index(achievementDefinitionStore, "code", "code", true); index(achievementDefinitionStore, "criterion", "criterion");
+    const achievementProgressStore = create(stores.achievementProgress); index(achievementProgressStore, "userAchievement", ["userId", "achievementId"], true); index(achievementProgressStore, "userAchievementStatus", ["userId", "achievementStatus"]);
+    const studyPlanStore = create(stores.dailyStudyPlans); index(studyPlanStore, "userDate", ["userId", "date"], true);
   }
 
   async get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined> { return this.run<T | undefined>(store, "readonly", (objectStore) => objectStore.get(key)); }

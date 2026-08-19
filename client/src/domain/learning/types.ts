@@ -172,7 +172,7 @@ export interface ObjectiveProgress extends Versioned { userId: EntityId; lessonI
 export interface Bookmark extends Versioned { userId: EntityId; contentId: EntityId; contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing"; createdAt: string; }
 export interface PersonalNote extends Versioned { userId: EntityId; contentId: EntityId; text: string; }
 export interface LearningSession extends Versioned { userId: EntityId; activity: LearningEventType; lessonId?: EntityId; skill?: Skill; startedAt: string; endedAt?: string; durationSeconds?: number; completed: boolean; }
-export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; audioPackVersion?: string; lastLessonId?: EntityId; diagnosticResult?: DiagnosticResult; }
+export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; hapticEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; audioPackVersion?: string; lastLessonId?: EntityId; diagnosticResult?: DiagnosticResult; }
 export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
 
 /** The skill labs share one activity contract while preserving each skill's own payload shape. */
@@ -287,6 +287,52 @@ export interface AssessmentResult extends Versioned {
 export interface EducationalCertificate extends Versioned {
   userId: EntityId; courseId?: EntityId; level?: LevelCode; assessmentResultId?: EntityId; certificateNumber: string; issuedAt: string;
   learnerName: string; title: string; banglaTitle: string; verificationPayload: string; verificationStatus: "local-educational-record"; statement: string;
+}
+
+/** Phase 7 keeps personal learning evidence local, deterministic and independent from any AI service. */
+export type PersonalLearningEventType = "lesson-completed" | "lesson-practiced" | "vocabulary-reviewed" | "skill-completed" | "assessment-passed" | "certificate-issued";
+export type LearningGoalPeriod = "daily" | "weekly" | "monthly";
+export type LearningGoalMetric = "minutes" | "lessons" | "reviews" | "skill-activities" | "assessments";
+export type LearningGoalStatus = "active" | "complete" | "expired";
+export type AchievementCriterion = "lessons-completed" | "reviews-completed" | "skill-activities" | "assessment-passed" | "streak-days" | "xp-earned" | "certificate-issued";
+
+export interface PersonalLearningProfile extends Versioned {
+  userId: EntityId; preferredName?: string; learnerIntent: "daily-confidence" | "course-progress" | "exam-preparation" | "balanced";
+  focusSkills: Skill[]; weeklyTargetDays: number; totalXp: number; academyLevel: number; currentStreak: number; longestStreak: number;
+  lastActiveDate?: string; streakFreezeCredits: number; onboardingComplete: boolean;
+}
+
+export interface LearningGoal extends Versioned {
+  userId: EntityId; period: LearningGoalPeriod; metric: LearningGoalMetric; title: string; banglaTitle: string; target: number; current: number;
+  startsOn: string; endsOn: string; goalStatus: LearningGoalStatus; source: "default" | "learner";
+}
+
+export interface PersonalLearningEvent extends Versioned {
+  userId: EntityId; eventKey: string; type: PersonalLearningEventType; occurredAt: string; relatedContentId?: EntityId; skill?: Skill;
+  minutes?: number; metadata?: Record<string, string | number | boolean>;
+}
+
+export interface XpLedgerEntry extends Versioned {
+  userId: EntityId; eventId: EntityId; amount: number; ruleId: string; reason: string; banglaReason: string; occurredAt: string;
+}
+
+export interface StudyDayRecord extends Versioned {
+  userId: EntityId; date: string; meaningfulEventCount: number; minutes: number; xpEarned: number; eventTypes: PersonalLearningEventType[]; streakEligible: boolean;
+}
+
+export interface AchievementDefinition extends Versioned {
+  code: string; title: string; banglaTitle: string; description: string; criterion: AchievementCriterion; threshold: number; xpReward: number;
+  category: "consistency" | "practice" | "skill" | "assessment" | "milestone"; visibility: "visible" | "hidden-until-earned";
+}
+
+export interface AchievementProgress extends Versioned {
+  userId: EntityId; achievementId: EntityId; currentValue: number; achievementStatus: "locked" | "unlocked"; unlockedAt?: string; notifiedAt?: string;
+}
+
+export interface DailyStudyPlan extends Versioned {
+  userId: EntityId; date: string; goalIds: EntityId[];
+  items: Array<{ id: EntityId; type: "lesson" | "review" | "skill" | "assessment"; title: string; banglaTitle: string; relatedContentId?: EntityId; estimatedMinutes: number; completed: boolean }>;
+  generatedBy: "rule-based"; updatedAt: string;
 }
 
 export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };

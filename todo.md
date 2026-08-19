@@ -132,6 +132,59 @@
 - [x] Assessment Hub এবং diagnostic, placement, lesson, unit, skill, level, mock ও final assessment workflows তৈরি করা।
 - [x] Result breakdown, supportive recovery plan, review mistakes, mistake-bank/progress integration, history, comparison ও local analytics তৈরি করা।
 - [x] Level/course completion badges, educational completion certificate data model, privacy-safe QR payload ও offline certificate artifact তৈরি করা।
-- [ ] Assessment engine tests, mobile/offline validation, production build ও GitHub Pages deployment যাচাই করা।
-- [ ] GitHub authorization পুনঃস্থাপন করে Phase 6 release commit push, Pages workflow completion ও published assessment/certificate routes যাচাই করা।
+- [x] Assessment engine tests, mobile/offline validation, production build ও GitHub Pages deployment যাচাই করা।
+- [x] GitHub authorization পুনঃস্থাপন করে Phase 6 release commit push, Pages workflow completion ও published assessment/certificate routes যাচাই করা।
 - [x] Phase 6 delivered features, sample-data boundary, limitations ও release result নথিবদ্ধ করা।
+
+## Phase 8 complete English library, reference center and resource system
+
+- [ ] Phase 8 specification, existing offline course/content architecture এবং explicit no-AI boundary reconcile করা।
+- [ ] Versioned library reference, category, source-license, import, bookmark, note, history ও search contracts; IndexedDB migration তৈরি করা।
+- [ ] Original or attribution-ready sample grammar, vocabulary usage, phrase, pronunciation, writing, reading ও listening-reference catalogue তৈরি করা।
+- [ ] Indexed offline search, grouped results, efficient indexed/paginated query path, local search history ও import validation তৈরি করা।
+- [ ] Library Hub, category navigation, quick-reference cards, grammar/tense/preposition/verb/IPA and pronunciation references তৈরি করা।
+- [ ] Phrasal verb, idiom, collocation, common error, confusing word, word-family, synonym/antonym, sentence-pattern ও useful-phrase library তৈরি করা।
+- [ ] Writing, reading, listening, communication ও English-usage resource surfaces তৈরি করা।
+- [ ] Local bookmarks, notes, recently viewed, continue-reading ও rule-based recommendation integration তৈরি করা।
+- [ ] Accessibility, mobile/offline UX, source-license diagnostics, tests, performance, production build ও GitHub Pages release যাচাই করা।
+- [ ] Phase 8 supported workflows, sample-data boundary, limitations ও release result নথিবদ্ধ করে final delivery সম্পন্ন করা।
+
+## Phase 7 personal learning, gamification and motivation engine — priority before Phase 8
+
+- [x] Phase 7 full specification, existing learner data/settings/progress architecture ও explicit no-AI boundary reconcile করা।
+- [x] Versioned personal learning profile, daily/weekly/monthly goals, XP ledger, streak, achievement, milestone, daily plan, calendar and motivation contracts; IndexedDB migration তৈরি করা।
+- [x] Deterministic goal progress, daily plan, safe XP balancing, academy-level, streak/freeze/recovery, achievement and milestone engines তৈরি করা।
+- [x] Personal dashboard, goal tracker, XP history, achievement badges, study calendar, CEFR journey roadmap, supportive motivation and no-guilt status UI তৈরি করা।
+- [x] Lesson, practice, vocabulary review, skill activity, assessment and certificate completion থেকে meaningful learning events record ও duplicate-safe XP integration করা।
+- [x] Offline persistence, data export/import, Bangla/mixed/immersion copy, privacy, accessibility, haptic/sound/animation preference ও mobile UX যাচাই করা।
+- [x] Phase 7 unit tests, production build, scope limitations and release documentation সম্পন্ন করা।
+- [ ] Authenticated GitHub Pages publication চালিয়ে Phase 7 production route যাচাই করা।
+
+## Phase 9 vocabulary category mini-course experience — complete separately after Phase 8
+
+- [ ] 200-category master map, vocabulary corpus linkage, category/subcategory taxonomy, source-license and no-fake-audio/image boundaries reconcile করা।
+- [ ] Category, subcategory, progress, learning batch, sentence/phrase linkage, category practice, quiz and category history contracts; IndexedDB migration তৈরি করা।
+- [ ] Category home premium cards, detail hero, mastery evidence, overview, objectives, subcategory cards and mobile horizontal tab navigation তৈরি করা।
+- [ ] Batched learn mode, accessible word cards, licensed/original visual/audio conditional states, pronunciation, sentence patterns, word relations and category phrases তৈরি করা।
+- [ ] Flashcard, recall, listening, speaking, practice, review, quiz, progress, completion state and duplicate-safe learning-event integration তৈরি করা।
+- [ ] All 200 master categories import/coverage validation, realistic missing-content states, efficient pagination/indexed queries, offline behavior and responsive accessibility যাচাই করা।
+- [ ] Phase 9 tests, GitHub Pages production release, source/license limitations and coverage report সম্পন্ন করা。
+
+## Phase 10 English Mastery Assessment Program — complete separately after Phase 9
+
+- [ ] 5–6 month program specification, existing assessment/certificate engine linkage, original/licensed content boundary, no-AI and no-official-exam claim reconcile করা।
+- [ ] Program, month, week, task schedule, checkpoint, final exam, local rubric, diagnostic/placement and learner-program-progress contracts; IndexedDB persistence তৈরি করা।
+- [ ] Program home, six-month roadmap, balanced weekly workload, diagnostic entry, current-stage and rule-based placement reporting তৈরি করা।
+- [ ] Original grammar, vocabulary, reading, listening, writing, speaking, pronunciation, communication and integrated-test catalogue তৈরি করা।
+- [ ] Monthly checkpoint, Academy Score self/transparent rubric, strengths/weaknesses, prior-month comparison, recovery plan and final completion flow তৈরি করা।
+- [ ] Offline speaking recording/self-assessment, writing self-rubric, timer/resume, local attempt data and certificate eligibility boundaries যাচাই করা।
+- [ ] Phase 10 accessibility, mobile UX, offline persistence, original-content/source diagnostics, automated tests, GitHub Pages release and limitations documentation সম্পন্ন করা।
+
+## Phase 11 real-life English, conversation and communication mastery — complete separately after Phase 10
+
+- [ ] Seven-stage Survival-to-Advanced communication roadmap, existing skills/corpus linkage, original/licensed dialogue/media and no-AI boundary reconcile করা।
+- [ ] Communication stage, scenario, dialogue, sentence builder, reusable pattern, question/response, speaking practice and offline progress contracts; IndexedDB persistence তৈরি করা।
+- [ ] Speak English in Real Life hub, stage progress, scenario objectives, useful vocabulary/phrases, sentence patterns and bilingual dialogue surfaces তৈরি করা।
+- [ ] Survival, everyday, social, practical, academic, workplace and advanced communication scenario lesson catalogue তৈরি করা।
+- [ ] Sentence expansion, pattern substitution, question builder, natural response, follow-up question, conversation extension, local recording/self-review and scenario challenge flows তৈরি করা।
+- [ ] Offline persistence, source/license diagnostics, realistic unavailable-media fallback, Bangla/mixed/immersion UX, accessibility, mobile validation, tests and GitHub Pages release সম্পন্ন করা।

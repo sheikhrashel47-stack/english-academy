@@ -38,6 +38,7 @@ const AssessmentPage = lazy(() => import("@/pages/AssessmentPage"));
 const AssessmentResultPage = lazy(() => import("@/pages/AssessmentResultPage"));
 const AssessmentHistoryPage = lazy(() => import("@/pages/AssessmentHistoryPage"));
 const CertificatesPage = lazy(() => import("@/pages/CertificatesPage"));
+const PersonalGrowthPage = lazy(() => import("@/pages/PersonalGrowthPage"));
 
 function Router() {
   const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -94,6 +95,7 @@ function Router() {
         <Route path="/profile" component={() => <PrototypeStudioPage kind="profile" />} />
         <Route path="/history" component={AssessmentHistoryPage} />
         <Route path="/certificates" component={CertificatesPage} />
+        <Route path="/growth" component={PersonalGrowthPage} />
         <Route path="/progress/skills" component={ProgressPage} />
         <Route path="/progress" component={ProgressPage} />
         <Route path="/tools" component={ToolsPage} />

@@ -87,3 +87,5 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - **Progress canonical surface:** The progress screen leads with the Pre-A1–C2 ribbon, current focus, next factual level and one explicit study action before secondary metrics.
 - **Certificate academic language:** Certificate screens use paper-like white surfaces, Academy Emerald focus accents and factual provenance; completion records never mimic an official credential or a reward-game screen.
 - **Branded non-content states:** Loading and empty states keep the English Academy workspace identity, an English learning-purpose headline, supportive Bangla guidance, one factual local-status cue and a safe next action where one exists.
+- **Personal Growth ledger:** The Growth workspace leads with a connected Pre-A1–C2 CEFR study ribbon and local learning evidence; XP is a supporting accounting signal, never the emotional center.
+- **Personal Growth voice:** Use study rhythm, recorded milestone, learning evidence and next step; trophy, unlock and reward-led language is excluded from the primary hierarchy.

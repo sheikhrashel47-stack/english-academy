@@ -53,6 +53,7 @@ export default function CertificatesPage() {
     setError(undefined); setSavingResultId(resultId);
     try {
       const certificate = await learningUseCases.createEducationalCertificate({ assessmentResultId: resultId, learnerName: learnerName.trim() });
+      await learningUseCases.applyPersonalLearningEvent({ eventKey: `certificate-issued:${certificate.certificateNumber}`, type: "certificate-issued", occurredAt: certificate.issuedAt, relatedContentId: certificate.assessmentResultId, metadata: { certificateNumber: certificate.certificateNumber, level: certificate.level ?? "unspecified" } }).catch(() => undefined);
       await refresh(); setSelectedNumber(certificate.certificateNumber);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Certificate তৈরি করা যায়নি। আবার চেষ্টা করো।");

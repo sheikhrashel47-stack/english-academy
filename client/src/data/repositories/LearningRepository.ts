@@ -7,6 +7,7 @@ import { phase2Seed } from "@/data/content/phase2Seed";
 import { originalSampleSource, phase3GrammarConcepts, phase3PracticeQuestions, phase3Vocabulary } from "@/data/content/phase3Seed";
 import { phase4Phrases, phase4SkillActivities, phase4SkillSources } from "@/data/content/phase4SkillSeed";
 import { phase6AssessmentBlueprints, phase6AssessmentQuestions, phase6AssessmentSources } from "@/data/content/phase6AssessmentSeed";
+import { phase7AchievementDefinitions } from "@/data/content/phase7PersonalSeed";
 import { productionCorpusManifest, type ProductionCorpusAudit } from "@/data/content/productionCorpus";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
@@ -14,11 +15,13 @@ import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngi
 import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
 import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
 import type { AssessmentAnswer, AssessmentResult, AssessmentSession } from "@/domain/learning/types";
+import type { AchievementDefinition, AchievementProgress, DailyStudyPlan, LearningGoal, PersonalLearningEvent, PersonalLearningProfile, StudyDayRecord, XpLedgerEntry } from "@/domain/learning/types";
 import { createPrivacySafeVerificationPayload, deriveCompletionBadges, isFullyScoredCompletion, type CompletionBadge } from "@/domain/learning/certificateEngine";
+import { academyLevelFor, buildDailyStudyPlan, calculateEventXp, localStudyDate, updateAchievements, updateGoals, updateStreak, updateStudyDay } from "@/domain/learning/personalLearningEngine";
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase6.assessment-engine.0";
+const seedVersion = "phase7.personal-learning.1";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
 const alphabetLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -28,6 +31,12 @@ const letterRange = (letter: string) => {
 };
 
 type ProductionCorpusPackage = { sources: VocabularySource[]; vocabulary: VocabularyItem[]; sentences: VocabularySentence[]; audit: ProductionCorpusAudit };
+
+const defaultPersonalProfile = (): PersonalLearningProfile => ({
+  id: `personal-profile-${learnerId}`, schemaVersion: 9, updatedAt: timestamp(), createdAt: timestamp(), userId: learnerId,
+  learnerIntent: "balanced", focusSkills: ["vocabulary", "grammar", "listening"], weeklyTargetDays: 5,
+  totalXp: 0, academyLevel: 1, currentStreak: 0, longestStreak: 0, streakFreezeCredits: 0, onboardingComplete: false,
+});
 
 export type LessonBundle = { lesson: Lesson; vocabulary: VocabularyItem[]; questions: Question[]; progress?: UserLessonProgress; activityProgress: UserActivityProgress[]; bookmarked: boolean; note?: PersonalNote };
 export type UnitBundle = { unit: Unit; level: import("@/domain/learning/types").Level; lessons: Lesson[]; chapters: Chapter[]; unlocked: boolean; completed: boolean };
@@ -42,7 +51,7 @@ export type SkillActivityPage = { activities: SkillActivity[]; page: number; pag
 export type SkillRecommendation = { skill: LabSkill; title: string; banglaTitle: string; reason: string; activityId?: string };
 export type CertificateEligibility = { result: AssessmentResult; level: NonNullable<AssessmentResult["level"]>; assessmentType: "level" | "final" };
 
-const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 5, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
+const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 5, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, hapticEnabled: false, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
 class LearningRepository {
   private productionCorpusBootstrap?: Promise<void>;
@@ -65,6 +74,8 @@ class LearningRepository {
       await this.persistPhase3Seed();
       await this.persistSkillSeed();
       await this.persistAssessmentSeed();
+      await this.persistPersonalLearningSeed();
+      await this.ensurePersonalLearningProfile();
       await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
       logger.debug("seed-loaded", { version: seedVersion });
     }
@@ -111,6 +122,13 @@ class LearningRepository {
       englishAcademyDb.putMany(stores.assessmentQuestions, phase6AssessmentQuestions),
       englishAcademyDb.putMany(stores.assessmentBlueprints, phase6AssessmentBlueprints),
     ]);
+  }
+
+  private async persistPersonalLearningSeed(): Promise<void> { await englishAcademyDb.putMany(stores.achievementDefinitions, phase7AchievementDefinitions); }
+
+  private async ensurePersonalLearningProfile(): Promise<void> {
+    const profile = await englishAcademyDb.get<PersonalLearningProfile>(stores.personalProfiles, `personal-profile-${learnerId}`);
+    if (!profile) await englishAcademyDb.put(stores.personalProfiles, defaultPersonalProfile());
   }
 
   private async ensureProductionCorpus(): Promise<void> {
@@ -250,6 +268,68 @@ class LearningRepository {
     return { vocabulary, sentences, grammar, sources, corpusVersion: settings.corpusVersion };
   }
   async updateSettings(patch: Partial<Omit<AppSettings, "id" | "schemaVersion" | "updatedAt">>): Promise<AppSettings> { const current = await this.getSettings(); const next = { ...current, ...patch, updatedAt: timestamp() }; await englishAcademyDb.put(stores.settings, next); return next; }
+  async getPersonalLearningProfile(): Promise<PersonalLearningProfile> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    return (await englishAcademyDb.get<PersonalLearningProfile>(stores.personalProfiles, `personal-profile-${learnerId}`)) ?? defaultPersonalProfile();
+  }
+  async updatePersonalLearningProfile(patch: Partial<Omit<PersonalLearningProfile, "id" | "schemaVersion" | "updatedAt" | "createdAt" | "userId">>): Promise<PersonalLearningProfile> {
+    const current = await this.getPersonalLearningProfile(); const next = { ...current, ...patch, updatedAt: timestamp() };
+    await englishAcademyDb.put(stores.personalProfiles, next); return next;
+  }
+  async getLearningGoals(period?: LearningGoal["period"]): Promise<LearningGoal[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const records = period ? await englishAcademyDb.getByIndex<LearningGoal>(stores.learningGoals, "userPeriodStatus", [learnerId, period, "active"]) : await englishAcademyDb.getAll<LearningGoal>(stores.learningGoals);
+    return records.filter((goal) => goal.userId === learnerId).sort((a, b) => a.endsOn.localeCompare(b.endsOn));
+  }
+  async saveLearningGoal(input: Omit<LearningGoal, "id" | "schemaVersion" | "updatedAt" | "createdAt" | "userId"> & { id?: string }): Promise<LearningGoal> {
+    await this.seedIfNeeded({ waitForCorpus: false }); const existing = input.id ? await englishAcademyDb.get<LearningGoal>(stores.learningGoals, input.id) : undefined; const now = timestamp();
+    const goal: LearningGoal = { ...input, id: existing?.id ?? `learning-goal-${crypto.randomUUID()}`, schemaVersion: 8, updatedAt: now, createdAt: existing?.createdAt ?? now, userId: learnerId };
+    await englishAcademyDb.put(stores.learningGoals, goal); return goal;
+  }
+  async getPersonalLearningEvents(limit = 120): Promise<PersonalLearningEvent[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    return englishAcademyDb.getByIndexRange<PersonalLearningEvent>(stores.personalLearningEvents, "userOccurred", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"]), limit);
+  }
+  async recordPersonalLearningEvent(input: Omit<PersonalLearningEvent, "id" | "schemaVersion" | "updatedAt" | "createdAt" | "userId">): Promise<PersonalLearningEvent> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const existing = (await englishAcademyDb.getByIndex<PersonalLearningEvent>(stores.personalLearningEvents, "userEventKey", [learnerId, input.eventKey]))[0]; if (existing) return existing;
+    const now = timestamp(); const event: PersonalLearningEvent = { ...input, id: `personal-learning-event-${crypto.randomUUID()}`, schemaVersion: 8, updatedAt: now, createdAt: now, userId: learnerId };
+    await englishAcademyDb.put(stores.personalLearningEvents, event); return event;
+  }
+  async getXpLedger(limit = 180): Promise<XpLedgerEntry[]> {
+    await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.getByIndexRange<XpLedgerEntry>(stores.xpLedger, "userOccurred", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"]), limit);
+  }
+  async getStudyDayRecords(): Promise<StudyDayRecord[]> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.getByIndexRange<StudyDayRecord>(stores.studyDays, "userDate", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"])); }
+  async getAchievementDefinitions(): Promise<AchievementDefinition[]> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.getAll<AchievementDefinition>(stores.achievementDefinitions); }
+  async getAchievementProgress(): Promise<AchievementProgress[]> { await this.seedIfNeeded({ waitForCorpus: false }); return (await englishAcademyDb.getAll<AchievementProgress>(stores.achievementProgress)).filter((item) => item.userId === learnerId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
+  async getDailyStudyPlan(date: string): Promise<DailyStudyPlan | undefined> { await this.seedIfNeeded({ waitForCorpus: false }); return (await englishAcademyDb.getByIndex<DailyStudyPlan>(stores.dailyStudyPlans, "userDate", [learnerId, date]))[0]; }
+  async getOrCreateDailyStudyPlan(date: string): Promise<DailyStudyPlan> {
+    const saved = await this.getDailyStudyPlan(date); if (saved) return saved;
+    const [goals, reviews, resume, mastery] = await Promise.all([this.getLearningGoals(), this.getDueReviewItems(), this.getContinueLearning(), this.getSkillMastery()]);
+    const weakSkills = mastery.filter((item) => item.attemptCount > 0).sort((a, b) => (a.accuracy ?? 0) - (b.accuracy ?? 0) || a.activitiesCompleted - b.activitiesCompleted).map((item) => item.skill).slice(0, 2);
+    const plan = buildDailyStudyPlan({ userId: learnerId, date, goals, dueReviewCount: reviews.length, currentLesson: resume ? { id: resume.lesson.id, title: resume.lesson.title, banglaTitle: resume.lesson.banglaTitle } : undefined, weakSkills });
+    return this.saveDailyStudyPlan({ date: plan.date, goalIds: plan.goalIds, items: plan.items, generatedBy: plan.generatedBy });
+  }
+  async saveDailyStudyPlan(input: Omit<DailyStudyPlan, "id" | "schemaVersion" | "updatedAt" | "createdAt" | "userId">): Promise<DailyStudyPlan> {
+    await this.seedIfNeeded({ waitForCorpus: false }); const existing = await this.getDailyStudyPlan(input.date); const now = timestamp();
+    const plan: DailyStudyPlan = { ...input, id: existing?.id ?? `daily-study-plan-${learnerId}-${input.date}`, schemaVersion: 9, createdAt: existing?.createdAt ?? now, updatedAt: now, userId: learnerId };
+    await englishAcademyDb.put(stores.dailyStudyPlans, plan); return plan;
+  }
+  async applyPersonalLearningEvent(input: Omit<PersonalLearningEvent, "id" | "schemaVersion" | "updatedAt" | "createdAt" | "userId">) {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const existing = (await englishAcademyDb.getByIndex<PersonalLearningEvent>(stores.personalLearningEvents, "userEventKey", [learnerId, input.eventKey]))[0];
+    if (existing) return { event: existing, applied: false, xpAwarded: 0, unlockedAchievementIds: [] as string[] };
+    const event = await this.recordPersonalLearningEvent(input);
+    const [profile, allEvents, allDays, goals, definitions, achievementProgress] = await Promise.all([this.getPersonalLearningProfile(), this.getPersonalLearningEvents(600), this.getStudyDayRecords(), this.getLearningGoals(), this.getAchievementDefinitions(), this.getAchievementProgress()]);
+    const priorEvents = allEvents.filter((item) => item.id !== event.id); const date = localStudyDate(event.occurredAt); const sameDayCount = priorEvents.filter((item) => item.type === event.type && localStudyDate(item.occurredAt) === date).length;
+    const xp = calculateEventXp(event.type, sameDayCount); const nextDay = updateStudyDay(allDays.find((item) => item.date === date), event); const streakProfile = updateStreak(profile, date);
+    const firstProfile = { ...streakProfile, totalXp: profile.totalXp + xp.amount, academyLevel: academyLevelFor(profile.totalXp + xp.amount), updatedAt: event.occurredAt };
+    const progress = updateAchievements({ definitions, existing: achievementProgress, events: [...priorEvents, event], profile: firstProfile, at: event.occurredAt }); const achievementXp = progress.reduce((total, item) => total + item.xpReward, 0);
+    const nextProfile = { ...firstProfile, totalXp: firstProfile.totalXp + achievementXp, academyLevel: academyLevelFor(firstProfile.totalXp + achievementXp) }; const nextGoals = updateGoals(goals, event); const unlockedAchievementIds = progress.filter((item) => item.newlyUnlocked).map((item) => item.achievementId);
+    const ledger: XpLedgerEntry = { id: `xp-ledger-${event.id}`, schemaVersion: 9, createdAt: event.occurredAt, updatedAt: event.occurredAt, userId: learnerId, eventId: event.id, amount: xp.amount + achievementXp, ruleId: xp.ruleId, reason: xp.reason, banglaReason: achievementXp ? `${xp.banglaReason} + অর্জন` : xp.banglaReason, occurredAt: event.occurredAt };
+    await Promise.all([englishAcademyDb.put(stores.xpLedger, ledger), englishAcademyDb.put(stores.personalProfiles, nextProfile), englishAcademyDb.put(stores.studyDays, { ...nextDay, xpEarned: nextDay.xpEarned + ledger.amount }), ...nextGoals.map((goal) => englishAcademyDb.put(stores.learningGoals, goal)), ...progress.map(({ newlyUnlocked: _newlyUnlocked, xpReward: _xpReward, ...item }) => englishAcademyDb.put(stores.achievementProgress, item))]);
+    return { event, applied: true, xpAwarded: ledger.amount, unlockedAchievementIds, profile: nextProfile };
+  }
 
   private async getCurriculum() {
     await this.seedIfNeeded();

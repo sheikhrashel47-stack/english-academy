@@ -18,6 +18,7 @@ import {
   Ear,
   ClipboardCheck,
   Award,
+  Goal,
   Mic2,
   PenLine,
   Search,
@@ -63,6 +64,7 @@ const navigationGroups: NavigationGroup[] = [
     label: "অগ্রগতি",
     items: [
       { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
+      { href: "/growth", label: "Growth", icon: Goal },
       { href: "/exams", label: "Assessments", icon: ClipboardCheck },
       { href: "/diagnostic", label: "Diagnostic", icon: ClipboardCheck },
       { href: "/certificates", label: "Certificates", icon: Award },
@@ -75,7 +77,7 @@ const mobileNavigation: NavigationItem[] = [
   { href: "/dashboard", label: "Home", icon: House },
   { href: "/course/course-english-foundations", label: "Learn", icon: LibraryBig },
   { href: "/practice", label: "Practice", icon: ListChecks },
-  { href: "/tools", label: "AI", icon: Sparkles },
+  { href: "/tools", label: "Tools", icon: Wrench },
   { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
 ];
 
@@ -94,6 +96,7 @@ const quickDestinations = [
   { href: "/writing", label: "Writing Desk", hint: "Saved local draft" },
   { href: "/review", label: "Review queue", hint: "Due local items" },
   { href: "/progress", label: "Progress", hint: "CEFR learning ledger" },
+  { href: "/growth", label: "Personal growth", hint: "Goals, learning evidence and local milestones" },
   { href: "/settings", label: "Settings", hint: "Language and accessibility" },
 ];
 
@@ -166,8 +169,7 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
             {open ? <X size={22} /> : <Menu size={22} />}
           </Button>
           <Link href="/dashboard" className="mobile-brand-lockup" aria-label="English Academy dashboard">
-            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="" />
-            <span>EA</span>
+            <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="English Academy" />
           </Link>
           <div className="page-heading" aria-live="polite">
             {eyebrow && <span className="eyebrow">{eyebrow}</span>}
