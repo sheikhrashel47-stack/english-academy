@@ -84,3 +84,6 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - Skill labs use a shared learning system but expose a factual skill-specific method cue, such as listening clues, reading evidence or communication register, rather than swapped-label templates.
 - Progress surfaces use a connected Pre-A1–C2 CEFR ribbon that names current focus and the next factual level.
 - Global motivation language is factual and ledger-based. Streak, journey-day, reward and sparkle framing are excluded unless backed by real semantic progress evidence.
+- **Progress canonical surface:** The progress screen leads with the Pre-A1–C2 ribbon, current focus, next factual level and one explicit study action before secondary metrics.
+- **Certificate academic language:** Certificate screens use paper-like white surfaces, Academy Emerald focus accents and factual provenance; completion records never mimic an official credential or a reward-game screen.
+- **Branded non-content states:** Loading and empty states keep the English Academy workspace identity, an English learning-purpose headline, supportive Bangla guidance, one factual local-status cue and a safe next action where one exists.

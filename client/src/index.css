@@ -503,7 +503,11 @@
   .journal-check.current { color: white; background: #C95D3A; box-shadow: 0 2px 0 #A84227; }
   .route-footer-note { display: flex; align-items: center; gap: 7px; margin-top: 13px; padding-left: 3px; color: oklch(0.5 0.03 246); font-size: 10px; }
   .route-footer-note svg { color: #C95D3A; }
-  .route-loading { min-height: 100vh; display: grid; place-items: center; color: #A8432A; background: oklch(0.96 0.015 83); font-family: "DM Serif Display", Georgia, serif; font-size: 23px; }
+  .route-loading { min-height: 100vh; display: grid; align-content: center; justify-items: center; gap: .4rem; padding: 2rem; color: var(--academy-emerald); background: var(--academy-canvas); font-family: "Manrope", "Noto Sans Bengali", sans-serif; text-align: center; }
+  .route-loading > span { font-size: .68rem; font-weight: 850; letter-spacing: .12em; }
+  .route-loading h1 { margin: 0; color: var(--academy-ink); font-size: clamp(1.35rem, 3vw, 2rem); letter-spacing: -.04em; }
+  .route-loading p { max-width: 28rem; margin: 0; color: var(--academy-ink-muted); line-height: 1.65; }
+  .route-loading small { margin-top: .35rem; padding: .38rem .6rem; border: 1px solid color-mix(in srgb, var(--academy-emerald), transparent 76%); color: var(--academy-emerald); font-size: .68rem; font-weight: 750; }
   .settings-route-card { min-height: 153px; position: relative; display: grid; grid-template-columns: 1.2fr minmax(230px, .8fr) auto; align-items: center; gap: 28px; margin-bottom: 17px; padding: 24px 31px; overflow: hidden; background-color: oklch(0.97 0.012 83); border: 1px solid oklch(0.82 0.027 77); border-radius: 3px 18px 18px 18px; box-shadow: 0 10px 24px oklch(0.36 0.04 250 / 6%); }
   .settings-stamp { display: inline-flex; align-items: center; gap: 7px; width: max-content; color: #A8432A; font-size: 9px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
   .settings-route-card h2 { margin: 6px 0 5px; font-size: 32px; font-weight: 400; }

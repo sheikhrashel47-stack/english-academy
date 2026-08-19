@@ -17,6 +17,7 @@ import {
   Sparkles,
   Ear,
   ClipboardCheck,
+  Award,
   Mic2,
   PenLine,
   Search,
@@ -62,7 +63,9 @@ const navigationGroups: NavigationGroup[] = [
     label: "অগ্রগতি",
     items: [
       { href: "/progress", label: "Progress", icon: ChartNoAxesCombined },
+      { href: "/exams", label: "Assessments", icon: ClipboardCheck },
       { href: "/diagnostic", label: "Diagnostic", icon: ClipboardCheck },
+      { href: "/certificates", label: "Certificates", icon: Award },
       { href: "/tools", label: "Tools", icon: Wrench },
     ],
   },
@@ -84,6 +87,8 @@ const quickDestinations = [
   { href: "/grammar", label: "Grammar", hint: "Topics and examples" },
   { href: "/listening", label: "Listening Lab", hint: "Browser voice sample" },
   { href: "/audio", label: "Offline audio pack", hint: "Three downloadable pronunciation tracks" },
+  { href: "/exams", label: "Assessment hub", hint: "Local diagnostic, placement and mock checks" },
+  { href: "/certificates", label: "Certificates & badges", hint: "Local completion records and offline print" },
   { href: "/diagnostic", label: "Personal diagnostic", hint: "Level signal and study path" },
   { href: "/speaking", label: "Speaking Studio", hint: "Browser recording" },
   { href: "/writing", label: "Writing Desk", hint: "Saved local draft" },
@@ -195,7 +200,7 @@ export function PhaseZeroNotice() {
   return (
     <section className="phase-notice" aria-label="বর্তমান foundation-এর সীমা">
       <div className="phase-notice-icon"><Sparkles size={18} /></div>
-      <p><strong>Offline-first learning foundation</strong> — structured lesson, practice, local review, browser audio/recording, writing draft এবং progress ব্যবহার করা যায়। AI feedback, cloud sync, full mock exams ও verified certificates এখনো চালু হয়নি।</p>
+      <p><strong>Offline-first learning workspace</strong> — structured lesson, practice, local review, browser audio/recording, writing draft, progress এবং local assessment ব্যবহার করা যায়। AI feedback, cloud sync, remote proctoring ও accredited/official certification এতে নেই।</p>
     </section>
   );
 }

@@ -6,16 +6,19 @@ import { importVocabularyPackage, type VocabularyImportReport } from "@/data/con
 import { phase2Seed } from "@/data/content/phase2Seed";
 import { originalSampleSource, phase3GrammarConcepts, phase3PracticeQuestions, phase3Vocabulary } from "@/data/content/phase3Seed";
 import { phase4Phrases, phase4SkillActivities, phase4SkillSources } from "@/data/content/phase4SkillSeed";
+import { phase6AssessmentBlueprints, phase6AssessmentQuestions, phase6AssessmentSources } from "@/data/content/phase6AssessmentSeed";
 import { productionCorpusManifest, type ProductionCorpusAudit } from "@/data/content/productionCorpus";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
 import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, Attempt, Bookmark, Chapter, DiagnosticResult, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
+import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
+import type { AssessmentAnswer, AssessmentResult, AssessmentSession } from "@/domain/learning/types";
+import { createPrivacySafeVerificationPayload, deriveCompletionBadges, isFullyScoredCompletion, type CompletionBadge } from "@/domain/learning/certificateEngine";
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase5.skills-lab.0";
+const seedVersion = "phase6.assessment-engine.0";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
 const alphabetLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -37,6 +40,7 @@ export type VocabularyReviewQueue = { overdue: VocabularySearchResult["entries"]
 export type CorpusSnapshot = { vocabulary: number; sentences: number; grammar: number; sources: number; corpusVersion?: string };
 export type SkillActivityPage = { activities: SkillActivity[]; page: number; pageSize: number; total: number; hasMore: boolean };
 export type SkillRecommendation = { skill: LabSkill; title: string; banglaTitle: string; reason: string; activityId?: string };
+export type CertificateEligibility = { result: AssessmentResult; level: NonNullable<AssessmentResult["level"]>; assessmentType: "level" | "final" };
 
 const defaultSettings = (): AppSettings => ({ id: settingsId, schemaVersion: 5, updatedAt: timestamp(), theme: "light", languageMode: "mixed", soundEnabled: true, animationsEnabled: true, reducedMotion: false, dailyGoalMinutes: 15, seedVersion });
 
@@ -60,6 +64,7 @@ class LearningRepository {
       await this.persistCurriculum(phase2Seed);
       await this.persistPhase3Seed();
       await this.persistSkillSeed();
+      await this.persistAssessmentSeed();
       await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
       logger.debug("seed-loaded", { version: seedVersion });
     }
@@ -97,6 +102,14 @@ class LearningRepository {
       englishAcademyDb.putMany(stores.skillSources, phase4SkillSources),
       englishAcademyDb.putMany(stores.skillActivities, phase4SkillActivities),
       englishAcademyDb.putMany(stores.phrases, phase4Phrases),
+    ]);
+  }
+
+  private async persistAssessmentSeed(): Promise<void> {
+    await Promise.all([
+      englishAcademyDb.putMany(stores.assessmentSources, phase6AssessmentSources),
+      englishAcademyDb.putMany(stores.assessmentQuestions, phase6AssessmentQuestions),
+      englishAcademyDb.putMany(stores.assessmentBlueprints, phase6AssessmentBlueprints),
     ]);
   }
 
@@ -144,6 +157,91 @@ class LearningRepository {
   }
 
   async getSettings(): Promise<AppSettings> { await this.seedIfNeeded(); const saved = await englishAcademyDb.get<AppSettings>(stores.settings, settingsId); return { ...defaultSettings(), ...saved, id: settingsId }; }
+  async getAssessmentBlueprints(filters: { assessmentType?: AssessmentType; level?: AssessmentBlueprint["level"] } = {}): Promise<AssessmentBlueprint[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const records = filters.assessmentType
+      ? await englishAcademyDb.getByIndex<AssessmentBlueprint>(stores.assessmentBlueprints, "assessmentType", filters.assessmentType)
+      : await englishAcademyDb.getAll<AssessmentBlueprint>(stores.assessmentBlueprints);
+    return records.filter((item) => !filters.level || item.level === filters.level).sort((a, b) => a.title.localeCompare(b.title));
+  }
+  async getAssessmentBlueprint(blueprintId: string): Promise<AssessmentBlueprint | undefined> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.get<AssessmentBlueprint>(stores.assessmentBlueprints, blueprintId); }
+  async getAssessmentQuestions(filters: { assessmentType?: AssessmentType; skill?: Skill; level?: AssessmentQuestion["level"]; approvedOnly?: boolean } = {}): Promise<AssessmentQuestion[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const records = filters.skill
+      ? await englishAcademyDb.getByIndex<AssessmentQuestion>(stores.assessmentQuestions, "skill", filters.skill)
+      : filters.level
+        ? await englishAcademyDb.getByIndex<AssessmentQuestion>(stores.assessmentQuestions, "level", filters.level)
+        : await englishAcademyDb.getAll<AssessmentQuestion>(stores.assessmentQuestions);
+    return records.filter((item) => (filters.approvedOnly === false || item.approved) && (!filters.assessmentType || item.assessmentTypes.includes(filters.assessmentType))).sort((a, b) => a.id.localeCompare(b.id));
+  }
+  async createAssessmentSession(input: { blueprint: AssessmentBlueprint; questionIds: string[]; sectionOrder: string[]; remainingSeconds?: number }): Promise<AssessmentSession> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const now = timestamp();
+    const session: AssessmentSession = { id: `assessment-session-${crypto.randomUUID()}`, schemaVersion: 7, updatedAt: now, userId: learnerId, blueprintId: input.blueprint.id, assessmentType: input.blueprint.assessmentType, sessionStatus: "in-progress", startedAt: now, expiresAt: input.remainingSeconds ? new Date(Date.now() + input.remainingSeconds * 1000).toISOString() : undefined, currentQuestionIndex: 0, questionIds: input.questionIds, sectionOrder: input.sectionOrder, remainingSeconds: input.remainingSeconds, lastSavedAt: now, resumedCount: 0 };
+    await englishAcademyDb.put(stores.assessmentSessions, session);
+    return session;
+  }
+  async getAssessmentSession(sessionId: string): Promise<AssessmentSession | undefined> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.get<AssessmentSession>(stores.assessmentSessions, sessionId); }
+  async getResumableAssessmentSession(blueprintId: string): Promise<AssessmentSession | undefined> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const sessions = await englishAcademyDb.getByIndex<AssessmentSession>(stores.assessmentSessions, "userBlueprint", [learnerId, blueprintId]);
+    return sessions.filter((session) => session.sessionStatus === "in-progress").sort((a, b) => b.lastSavedAt.localeCompare(a.lastSavedAt))[0];
+  }
+  async saveAssessmentSession(session: AssessmentSession, patch: Partial<Pick<AssessmentSession, "currentQuestionIndex" | "remainingSeconds" | "sessionStatus" | "submittedAt" | "resumedCount">> = {}): Promise<AssessmentSession> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const now = timestamp();
+    const next: AssessmentSession = { ...session, ...patch, updatedAt: now, lastSavedAt: now };
+    await englishAcademyDb.put(stores.assessmentSessions, next);
+    return next;
+  }
+  async getAssessmentAnswers(sessionId: string): Promise<AssessmentAnswer[]> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.getByIndex<AssessmentAnswer>(stores.assessmentAnswers, "sessionId", sessionId); }
+  async saveAssessmentAnswer(input: Omit<AssessmentAnswer, "id" | "schemaVersion" | "updatedAt">): Promise<AssessmentAnswer> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const existing = (await englishAcademyDb.getByIndex<AssessmentAnswer>(stores.assessmentAnswers, "sessionQuestion", [input.sessionId, input.questionId]))[0];
+    const answer: AssessmentAnswer = { ...existing, ...input, id: existing?.id ?? `assessment-answer-${input.sessionId}-${input.questionId}`, schemaVersion: 7, updatedAt: timestamp() };
+    await englishAcademyDb.put(stores.assessmentAnswers, answer);
+    return answer;
+  }
+  async saveAssessmentResult(input: Omit<AssessmentResult, "id" | "schemaVersion" | "updatedAt" | "userId">): Promise<AssessmentResult> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const now = timestamp();
+    const result: AssessmentResult = { ...input, id: `assessment-result-${crypto.randomUUID()}`, schemaVersion: 7, updatedAt: now, userId: learnerId };
+    await englishAcademyDb.put(stores.assessmentResults, result);
+    const session = await this.getAssessmentSession(input.sessionId);
+    if (session) await this.saveAssessmentSession(session, { sessionStatus: "submitted", submittedAt: input.completedAt, remainingSeconds: 0 });
+    return result;
+  }
+  async getAssessmentResults(): Promise<AssessmentResult[]> { await this.seedIfNeeded({ waitForCorpus: false }); return (await englishAcademyDb.getAll<AssessmentResult>(stores.assessmentResults)).filter((item) => item.userId === learnerId).sort((a, b) => b.completedAt.localeCompare(a.completedAt)); }
+  async getCertificateEligibility(): Promise<CertificateEligibility[]> {
+    const results = await this.getAssessmentResults();
+    return results.filter(isFullyScoredCompletion).map((result) => ({ result, level: result.level, assessmentType: result.assessmentType }));
+  }
+  async getCompletionBadges(): Promise<CompletionBadge[]> { return deriveCompletionBadges(await this.getAssessmentResults()); }
+  async getEducationalCertificates(): Promise<EducationalCertificate[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const records = await englishAcademyDb.getByIndexRange<EducationalCertificate>(stores.educationalCertificates, "userIssued", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"]));
+    return records.sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+  }
+  async getEducationalCertificate(certificateNumber: string): Promise<EducationalCertificate | undefined> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    return (await englishAcademyDb.getByIndex<EducationalCertificate>(stores.educationalCertificates, "certificateNumber", certificateNumber)).find((record) => record.userId === learnerId);
+  }
+  async createEducationalCertificate(input: { assessmentResultId: string; learnerName: string }): Promise<EducationalCertificate> {
+    const learnerName = input.learnerName.trim().replace(/\s+/g, " ");
+    if (!learnerName || learnerName.length > 80) throw new Error("Certificate-এর নাম ১ থেকে ৮০ অক্ষরের মধ্যে হওয়া দরকার।");
+    const eligible = (await this.getCertificateEligibility()).find((item) => item.result.id === input.assessmentResultId);
+    if (!eligible) throw new Error("এই resultটি fully-scored passed level/final completion evidence নয়; তাই certificate তৈরি করা যাবে না।");
+    const existing = (await this.getEducationalCertificates()).find((record) => record.assessmentResultId === input.assessmentResultId);
+    if (existing) return existing;
+    const now = timestamp(); const reference = crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase(); const certificateNumber = `EA-LER-${now.slice(0, 10).replace(/-/g, "")}-${reference}`;
+    const levels = await englishAcademyDb.getAll<import("@/domain/learning/types").Level>(stores.levels);
+    const certificate: EducationalCertificate = {
+      id: `educational-certificate-${crypto.randomUUID()}`, schemaVersion: 7, updatedAt: now, createdAt: now, userId: learnerId, courseId: levels.find((level) => level.code === eligible.level)?.courseId, level: eligible.level, assessmentResultId: eligible.result.id, certificateNumber, issuedAt: now, learnerName,
+      title: `English Academy ${eligible.level} Offline Certificate`, banglaTitle: `${eligible.level} সম্পন্নতার স্থানীয় রেকর্ড`, verificationPayload: createPrivacySafeVerificationPayload({ certificateNumber, issuedAt: now, level: eligible.level }), verificationStatus: "local-educational-record", statement: "Educational completion record — English Academy local learning workspace.",
+    };
+    await englishAcademyDb.put(stores.educationalCertificates, certificate);
+    return certificate;
+  }
   async getCorpusSnapshot(): Promise<CorpusSnapshot> {
     await this.seedIfNeeded();
     const [vocabulary, sentences, grammar, sources, settings] = await Promise.all([
@@ -509,9 +607,9 @@ class LearningRepository {
   async getMistakes(): Promise<MistakeBundle[]> { await this.seedIfNeeded(); const [records, questions] = await Promise.all([englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<Question>(stores.questions)]); return records.filter((record) => record.userId === learnerId && !record.resolved).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).map((record) => ({ record, question: questions.find((question) => question.id === record.questionId) })); }
   async getProgressSnapshot() { await this.seedIfNeeded(); const [roadmap, vocabulary, mistakes, attempts, reviews] = await Promise.all([this.getRoadmap(), this.getVocabularyEntries(), this.getMistakes(), englishAcademyDb.getAll<Attempt>(stores.attempts), this.getDueReviewItems()]); const completed = roadmap.filter((item) => item.completed).length; const learned = vocabulary.filter((entry) => entry.progress?.learned).length; const skills = (["grammar", "vocabulary", "reading", "listening", "speaking", "writing", "pronunciation"] as Skill[]).map((skill) => { const relevant = attempts.filter((attempt) => attempt.userId === learnerId && (phase2Seed.questions.find((question) => question.id === attempt.questionId)?.skill === skill)); return { skill, attempts: relevant.length, correct: relevant.filter((attempt) => attempt.isCorrect).length }; }); return { completed, totalLessons: roadmap.length, learned, totalVocabulary: vocabulary.length, mistakes: mistakes.length, reviewDue: reviews.length, skills, lastLessonId: (await this.getSettings()).lastLessonId, next: await this.getContinueLearning() }; }
 
-  async exportUserData() { await this.seedIfNeeded(); const [settings, progress, activityProgress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts, bookmarks, notes, objectives, sessions, skillAttempts, skillErrors, skillMastery] = await Promise.all([this.getSettings(), englishAcademyDb.getAll<UserLessonProgress>(stores.progress), englishAcademyDb.getAll<UserActivityProgress>(stores.activityProgress), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress), englishAcademyDb.getAll<Attempt>(stores.attempts), englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<ReviewItem>(stores.reviewItems), englishAcademyDb.getAll<WritingDraft>(stores.writingDrafts), englishAcademyDb.getAll<Bookmark>(stores.bookmarks), englishAcademyDb.getAll<PersonalNote>(stores.notes), englishAcademyDb.getAll<ObjectiveProgress>(stores.objectives), englishAcademyDb.getAll<LearningSession>(stores.sessions), englishAcademyDb.getAll<SkillAttempt>(stores.skillAttempts), englishAcademyDb.getAll<SkillError>(stores.skillErrors), englishAcademyDb.getAll<SkillMastery>(stores.skillMastery)]); return { format: "english-academy-user-data", version: 4, exportedAt: timestamp(), settings, progress, activityProgress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts, bookmarks, notes, objectives, sessions, skillAttempts, skillErrors, skillMastery }; }
-  async importUserData(value: unknown): Promise<void> { const data = value as Record<string, unknown>; if (!data || data.format !== "english-academy-user-data" || !Array.isArray(data.progress)) throw new AppError("ContentError", "এই ফাইলটি English Academy backup নয়। "); await this.resetUserData(); const collections: Array<[typeof stores.progress | typeof stores.activityProgress | typeof stores.vocabularyProgress | typeof stores.attempts | typeof stores.mistakes | typeof stores.reviewItems | typeof stores.writingDrafts | typeof stores.bookmarks | typeof stores.notes | typeof stores.objectives | typeof stores.sessions | typeof stores.skillAttempts | typeof stores.skillErrors | typeof stores.skillMastery, unknown]> = [[stores.progress, data.progress], [stores.activityProgress, data.activityProgress], [stores.vocabularyProgress, data.vocabularyProgress], [stores.attempts, data.attempts], [stores.mistakes, data.mistakes], [stores.reviewItems, data.reviewItems], [stores.writingDrafts, data.writingDrafts], [stores.bookmarks, data.bookmarks], [stores.notes, data.notes], [stores.objectives, data.objectives], [stores.sessions, data.sessions], [stores.skillAttempts, data.skillAttempts], [stores.skillErrors, data.skillErrors], [stores.skillMastery, data.skillMastery]]; await Promise.all(collections.flatMap(([store, values]) => Array.isArray(values) ? values.map((item) => englishAcademyDb.put(store, item)) : [])); if (data.settings && typeof data.settings === "object") await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(data.settings as AppSettings), id: settingsId, seedVersion }); }
-  async resetUserData(): Promise<void> { await this.seedIfNeeded(); const settings = await this.getSettings(); await Promise.all([englishAcademyDb.clear(stores.progress), englishAcademyDb.clear(stores.activityProgress), englishAcademyDb.clear(stores.vocabularyProgress), englishAcademyDb.clear(stores.attempts), englishAcademyDb.clear(stores.mistakes), englishAcademyDb.clear(stores.reviewItems), englishAcademyDb.clear(stores.writingDrafts), englishAcademyDb.clear(stores.bookmarks), englishAcademyDb.clear(stores.notes), englishAcademyDb.clear(stores.objectives), englishAcademyDb.clear(stores.sessions), englishAcademyDb.clear(stores.skillAttempts), englishAcademyDb.clear(stores.skillErrors), englishAcademyDb.clear(stores.skillMastery), englishAcademyDb.put(stores.settings, { ...settings, lastLessonId: undefined, updatedAt: timestamp() })]); }
+  async exportUserData() { await this.seedIfNeeded(); const [settings, progress, activityProgress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts, bookmarks, notes, objectives, sessions, skillAttempts, skillErrors, skillMastery, assessmentSessions, assessmentAnswers, assessmentResults, educationalCertificates] = await Promise.all([this.getSettings(), englishAcademyDb.getAll<UserLessonProgress>(stores.progress), englishAcademyDb.getAll<UserActivityProgress>(stores.activityProgress), englishAcademyDb.getAll<UserVocabularyProgress>(stores.vocabularyProgress), englishAcademyDb.getAll<Attempt>(stores.attempts), englishAcademyDb.getAll<MistakeRecord>(stores.mistakes), englishAcademyDb.getAll<ReviewItem>(stores.reviewItems), englishAcademyDb.getAll<WritingDraft>(stores.writingDrafts), englishAcademyDb.getAll<Bookmark>(stores.bookmarks), englishAcademyDb.getAll<PersonalNote>(stores.notes), englishAcademyDb.getAll<ObjectiveProgress>(stores.objectives), englishAcademyDb.getAll<LearningSession>(stores.sessions), englishAcademyDb.getAll<SkillAttempt>(stores.skillAttempts), englishAcademyDb.getAll<SkillError>(stores.skillErrors), englishAcademyDb.getAll<SkillMastery>(stores.skillMastery), englishAcademyDb.getAll<AssessmentSession>(stores.assessmentSessions), englishAcademyDb.getAll<AssessmentAnswer>(stores.assessmentAnswers), englishAcademyDb.getAll<AssessmentResult>(stores.assessmentResults), englishAcademyDb.getAll<EducationalCertificate>(stores.educationalCertificates)]); return { format: "english-academy-user-data", version: 5, exportedAt: timestamp(), settings, progress, activityProgress, vocabularyProgress, attempts, mistakes, reviewItems, writingDrafts, bookmarks, notes, objectives, sessions, skillAttempts, skillErrors, skillMastery, assessmentSessions, assessmentAnswers, assessmentResults, educationalCertificates }; }
+  async importUserData(value: unknown): Promise<void> { const data = value as Record<string, unknown>; if (!data || data.format !== "english-academy-user-data" || !Array.isArray(data.progress)) throw new AppError("ContentError", "এই ফাইলটি English Academy backup নয়। "); await this.resetUserData(); const collections: Array<[typeof stores.progress | typeof stores.activityProgress | typeof stores.vocabularyProgress | typeof stores.attempts | typeof stores.mistakes | typeof stores.reviewItems | typeof stores.writingDrafts | typeof stores.bookmarks | typeof stores.notes | typeof stores.objectives | typeof stores.sessions | typeof stores.skillAttempts | typeof stores.skillErrors | typeof stores.skillMastery | typeof stores.assessmentSessions | typeof stores.assessmentAnswers | typeof stores.assessmentResults | typeof stores.educationalCertificates, unknown]> = [[stores.progress, data.progress], [stores.activityProgress, data.activityProgress], [stores.vocabularyProgress, data.vocabularyProgress], [stores.attempts, data.attempts], [stores.mistakes, data.mistakes], [stores.reviewItems, data.reviewItems], [stores.writingDrafts, data.writingDrafts], [stores.bookmarks, data.bookmarks], [stores.notes, data.notes], [stores.objectives, data.objectives], [stores.sessions, data.sessions], [stores.skillAttempts, data.skillAttempts], [stores.skillErrors, data.skillErrors], [stores.skillMastery, data.skillMastery], [stores.assessmentSessions, data.assessmentSessions], [stores.assessmentAnswers, data.assessmentAnswers], [stores.assessmentResults, data.assessmentResults], [stores.educationalCertificates, data.educationalCertificates]]; await Promise.all(collections.flatMap(([store, values]) => Array.isArray(values) ? values.map((item) => englishAcademyDb.put(store, item)) : [])); if (data.settings && typeof data.settings === "object") await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(data.settings as AppSettings), id: settingsId, seedVersion }); }
+  async resetUserData(): Promise<void> { await this.seedIfNeeded(); const settings = await this.getSettings(); await Promise.all([englishAcademyDb.clear(stores.progress), englishAcademyDb.clear(stores.activityProgress), englishAcademyDb.clear(stores.vocabularyProgress), englishAcademyDb.clear(stores.attempts), englishAcademyDb.clear(stores.mistakes), englishAcademyDb.clear(stores.reviewItems), englishAcademyDb.clear(stores.writingDrafts), englishAcademyDb.clear(stores.bookmarks), englishAcademyDb.clear(stores.notes), englishAcademyDb.clear(stores.objectives), englishAcademyDb.clear(stores.sessions), englishAcademyDb.clear(stores.skillAttempts), englishAcademyDb.clear(stores.skillErrors), englishAcademyDb.clear(stores.skillMastery), englishAcademyDb.clear(stores.assessmentSessions), englishAcademyDb.clear(stores.assessmentAnswers), englishAcademyDb.clear(stores.assessmentResults), englishAcademyDb.clear(stores.educationalCertificates), englishAcademyDb.put(stores.settings, { ...settings, lastLessonId: undefined, updatedAt: timestamp() })]); }
 }
 
 export const learningRepository = new LearningRepository();

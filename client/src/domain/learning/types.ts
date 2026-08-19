@@ -239,6 +239,56 @@ export interface PronunciationAnalyzer { analyze(input: { audio: Blob; targetTex
 export interface WritingAnalysis { score?: number; issues: Array<{ category: string; message: string }>; suggestions: string[]; strengths: string[]; status: "available" | "manual-review" | "unavailable"; }
 export interface WritingAnalyzer { analyze(input: { text: string; activityId: EntityId; level: LevelCode }): Promise<WritingAnalysis>; }
 
+/** Phase 6 keeps assessment content, sessions and results distinct from ordinary lesson practice. */
+export type AssessmentType = "diagnostic" | "placement" | "lesson" | "unit" | "skill" | "level" | "final" | "mock";
+export type AssessmentQuestionType = "mcq" | "true-false" | "fill-blank" | "matching" | "sentence-builder" | "short-writing" | "spoken-response";
+export type AssessmentSessionStatus = "not-started" | "in-progress" | "submitted" | "expired" | "abandoned";
+export type AssessmentReviewStatus = "scored" | "manual-review" | "analysis-unavailable" | "not-applicable";
+
+export interface AssessmentSource extends Versioned {
+  name: string; creator: string; url?: string; license: SupportedLicense; licenseUrl?: string; attribution: string; commercialUseAllowed: boolean; notice?: string;
+}
+
+export interface AssessmentQuestion extends Versioned {
+  type: AssessmentQuestionType; assessmentTypes: AssessmentType[]; prompt: string; banglaPrompt?: string; instructions?: string; skill: Skill; level: LevelCode;
+  topic: string; difficulty: 1 | 2 | 3 | 4 | 5; tags: string[]; maxPoints: number; options?: QuestionOption[]; correctOptionId?: EntityId;
+  acceptedAnswers?: string[]; matchingPairs?: Array<{ left: string; right: string }>; sentenceTokens?: string[]; correctSentence?: string;
+  explanation?: string; banglaExplanation?: string; manualReviewRequired?: boolean; partialCreditEnabled?: boolean; negativeMarking?: number;
+  approved: boolean; approvalNote?: string; sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; attribution: string; commercialUseAllowed: boolean;
+}
+
+export interface AssessmentSection {
+  id: EntityId; title: string; banglaTitle: string; skill: Skill; questionCount: number; durationMinutes?: number; minimumScore?: number;
+  questionTypes: AssessmentQuestionType[]; tags?: string[]; difficultyBands?: Array<1 | 2 | 3 | 4 | 5>;
+}
+
+export interface AssessmentBlueprint extends Versioned {
+  assessmentType: AssessmentType; title: string; banglaTitle: string; description: string; level?: LevelCode; linkedContentId?: EntityId;
+  sections: AssessmentSection[]; durationMinutes?: number; overallMinimumScore?: number; requireAllSections?: boolean; randomizeQuestions: boolean;
+  feedbackPolicy: "after-each" | "after-submit" | "review-only"; sourceId: EntityId; license: SupportedLicense; attribution: string; commercialUseAllowed: boolean;
+}
+
+export interface AssessmentAnswer extends Versioned {
+  sessionId: EntityId; questionId: EntityId; sectionId: EntityId; response?: string; selectedOptionId?: EntityId; matchingResponse?: Record<string, string>;
+  markedForReview: boolean; answeredAt?: string; score?: number; isCorrect?: boolean; reviewStatus: AssessmentReviewStatus;
+}
+
+export interface AssessmentSession extends Versioned {
+  userId: EntityId; blueprintId: EntityId; assessmentType: AssessmentType; sessionStatus: AssessmentSessionStatus; startedAt?: string; submittedAt?: string; expiresAt?: string;
+  currentQuestionIndex: number; questionIds: EntityId[]; sectionOrder: EntityId[]; remainingSeconds?: number; lastSavedAt: string; resumedCount: number;
+}
+
+export interface AssessmentResult extends Versioned {
+  userId: EntityId; sessionId: EntityId; blueprintId: EntityId; assessmentType: AssessmentType; level?: LevelCode; completedAt: string;
+  score: number; earnedPoints: number; totalPoints: number; passed: boolean; estimatedLevel?: LevelCode; sectionScores: Array<{ sectionId: EntityId; skill: Skill; earnedPoints: number; totalPoints: number; score: number; passed?: boolean }>;
+  reviewStatus: AssessmentReviewStatus; manualReviewQuestionIds: EntityId[]; wrongQuestionIds: EntityId[]; correctQuestionIds: EntityId[];
+}
+
+export interface EducationalCertificate extends Versioned {
+  userId: EntityId; courseId?: EntityId; level?: LevelCode; assessmentResultId?: EntityId; certificateNumber: string; issuedAt: string;
+  learnerName: string; title: string; banglaTitle: string; verificationPayload: string; verificationStatus: "local-educational-record"; statement: string;
+}
+
 export type LearningSeed = { courses: Course[]; levels: Level[]; units: Unit[]; chapters: Chapter[]; lessons: Lesson[]; vocabulary: VocabularyItem[]; questions: Question[]; grammarTopics: GrammarTopic[]; };
 export type VocabularySearchFilters = { query?: string; letter?: string; level?: LevelCode; topic?: string; partOfSpeech?: string; masteryState?: VocabularyMasteryState; page?: number; pageSize?: number; };
 export type VocabularySearchResult = { entries: Array<{ item: VocabularyItem; progress?: UserVocabularyProgress; srsCard?: SRSCard }>; page: number; pageSize: number; total: number; hasMore: boolean; };

@@ -122,3 +122,15 @@
 - [x] Real attempt-driven skill mastery, error bank, recommendation foundation, dashboard/progress/mistake integration সম্পন্ন করা।
 - [x] Tests, offline behavior, mobile responsiveness, production build এবং GitHub Pages release যাচাই করা।
 - [ ] Phase 4 architecture, supported workflows, known limitations ও deployment ফলাফল deliver করা।
+
+## Phase 6 complete exam, assessment and certification engine
+
+- [x] Attached Phase 6 specification, current diagnostic/learning data flow এবং explicit non-goals reconcile করা。
+- [x] Assessment domain contracts, IndexedDB schema, source metadata, question quality gate ও approved original sample catalogue তৈরি করা।
+- [x] Deterministic selection, adaptive placement, objective scoring, partial credit, optional negative marking ও configurable passing rules তৈরি করা।
+- [x] Exam state autosave, timer, auto-submit, resume, question navigator, section navigation ও mark-for-review flow বাস্তবায়ন করা।
+- [x] Assessment Hub এবং diagnostic, placement, lesson, unit, skill, level, mock ও final assessment workflows তৈরি করা।
+- [x] Result breakdown, supportive recovery plan, review mistakes, mistake-bank/progress integration, history, comparison ও local analytics তৈরি করা।
+- [x] Level/course completion badges, educational completion certificate data model, privacy-safe QR payload ও offline certificate artifact তৈরি করা।
+- [ ] Assessment engine tests, mobile/offline validation, production build ও GitHub Pages deployment যাচাই করা।
+- [x] Phase 6 delivered features, sample-data boundary, limitations ও release result নথিবদ্ধ করা।
