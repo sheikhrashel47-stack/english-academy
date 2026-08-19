@@ -1,7 +1,7 @@
 /** Emerald Study House / Phase 3: central integrity and explicit-rights validation boundary. */
 import { AppError } from "@/core/errors/AppError";
 import { getCorrectAnswer } from "@/domain/practice/exerciseEngine";
-import type { GrammarConcept, LearningSeed, Prerequisite, VocabularyItem, VocabularySentence, VocabularySource } from "@/domain/learning/types";
+import type { GrammarConcept, LibraryCategory, LibraryResource, LibrarySource, LearningSeed, Prerequisite, VocabularyItem, VocabularySentence, VocabularySource } from "@/domain/learning/types";
 
 const knownBlockTypes = new Set(["heading", "explanation", "example", "dialogue", "reading", "vocabulary", "image", "audio", "question", "speaking", "writing", "mini-test", "self-check", "review", "assessment"]);
 
@@ -30,6 +30,18 @@ export function validateGrammarConcepts(concepts: GrammarConcept[], sources: Voc
     if (concept.prerequisites.some((id) => !conceptIds.has(id)) || concept.relatedConceptIds.some((id) => !conceptIds.has(id))) throw new AppError("ContentError", `Grammar concept ${concept.id} has a broken relationship.`);
     if (concept.practiceQuestionIds.some((id) => !questions.has(id))) throw new AppError("ContentError", `Grammar concept ${concept.id} references a missing practice question.`);
     validateVocabularyLicense(concept, sourceMap);
+  }
+}
+
+/** Library records are always local, rights-labelled reference materials rather than unreviewed web links. */
+export function validateLibraryRecords(source: LibrarySource, categories: LibraryCategory[], resources: LibraryResource[]): void {
+  if (!source.name || !source.creator || !source.license || source.commercialUseAllowed !== true || !source.attribution?.trim()) throw new AppError("ContentError", "Library source has incomplete rights metadata.");
+  const categoryIds = new Set(categories.map((category) => category.id)); const resourceIds = new Set(resources.map((resource) => resource.id));
+  if (categoryIds.size !== categories.length || resourceIds.size !== resources.length) throw new AppError("ContentError", "Library category or resource IDs must be unique.");
+  for (const resource of resources) {
+    if (!categoryIds.has(resource.categoryId) || !resource.title || !resource.banglaTitle || !resource.summary || !resource.banglaSummary || !resource.type || !resource.searchTerms.length || !resource.sections.length) throw new AppError("ContentError", `Library resource ${resource.id} is incomplete.`);
+    if (resource.sourceId !== source.id || resource.license !== source.license || resource.commercialUseAllowed !== true || !resource.attribution?.trim()) throw new AppError("ContentError", `Library resource ${resource.id} has invalid rights metadata.`);
+    if (resource.relatedResourceIds.some((id) => !resourceIds.has(id))) throw new AppError("ContentError", `Library resource ${resource.id} has a broken related-resource reference.`);
   }
 }
 

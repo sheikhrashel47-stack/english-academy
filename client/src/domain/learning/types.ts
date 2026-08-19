@@ -169,11 +169,50 @@ export interface ReviewItem extends Versioned {
   userId: EntityId; itemId: EntityId; itemType: "vocabulary" | "question" | "lesson" | "objective"; masteryScore: number; confidence: number; attemptCount: number; correctCount: number; wrongCount: number; lastAttemptAt?: string; nextReviewAt: string; reviewLevel: number;
 }
 export interface ObjectiveProgress extends Versioned { userId: EntityId; lessonId: EntityId; objective: string; state: "introduced" | "practiced" | "reviewed" | "assessed" | "mastered"; }
-export interface Bookmark extends Versioned { userId: EntityId; contentId: EntityId; contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing"; createdAt: string; }
+export interface Bookmark extends Versioned { userId: EntityId; contentId: EntityId; contentType: "lesson" | "grammar" | "vocabulary" | "reading" | "writing" | "library"; createdAt: string; }
 export interface PersonalNote extends Versioned { userId: EntityId; contentId: EntityId; text: string; }
 export interface LearningSession extends Versioned { userId: EntityId; activity: LearningEventType; lessonId?: EntityId; skill?: Skill; startedAt: string; endedAt?: string; durationSeconds?: number; completed: boolean; }
 export interface AppSettings extends Versioned { theme: "light" | "dark" | "focus"; languageMode: LanguageMode; soundEnabled: boolean; hapticEnabled: boolean; animationsEnabled: boolean; reducedMotion: boolean; dailyGoalMinutes: 10 | 15 | 20 | 30; seedVersion?: string; corpusVersion?: string; audioPackVersion?: string; lastLessonId?: EntityId; diagnosticResult?: DiagnosticResult; }
 export interface WritingDraft extends Versioned { userId: EntityId; promptId: EntityId; text: string; submittedAt?: string; }
+
+/** Phase 8: an expandable, locally stored reference system. The course teaches; the library explains and helps learners look things up. */
+export type LibraryResourceType = "grammar" | "tense" | "preposition" | "irregular-verb" | "phrasal-verb" | "idiom" | "collocation" | "common-error" | "confusing-word" | "word-family" | "synonym-antonym" | "sentence-pattern" | "useful-phrase" | "pronunciation" | "ipa" | "writing" | "reading" | "listening" | "communication" | "english-usage" | "quick-reference";
+export type LibraryFormality = "casual" | "neutral" | "formal" | "academic" | "professional";
+export type LibraryAudioStatus = "available" | "not-included" | "not-required";
+
+export interface LibrarySource extends Versioned {
+  name: string; creator: string; url?: string; license: SupportedLicense; licenseUrl?: string; commercialUseAllowed: boolean; attribution: string; notice?: string;
+}
+
+export interface LibraryCategory extends Versioned {
+  slug: string; title: string; banglaTitle: string; description: string; iconKey: string; order: number; resourceTypes: LibraryResourceType[];
+}
+
+export interface LibraryReferenceSection {
+  id: string; label: string; banglaLabel: string; body: string; banglaBody?: string; tone?: "rule" | "tip" | "warning" | "example" | "table";
+}
+
+export interface LibraryFact { label: string; value: string; banglaLabel?: string; banglaValue?: string; }
+
+export interface LibraryResource extends Versioned {
+  categoryId: EntityId; type: LibraryResourceType; title: string; banglaTitle: string; summary: string; banglaSummary: string; level: LevelCode;
+  /** Prefix tokens are computed during import so partial English/Bangla lookup uses a multi-entry IndexedDB index. */
+  searchTerms: string[]; formality?: LibraryFormality; topic?: string; estimatedMinutes?: number; audioStatus: LibraryAudioStatus;
+  facts: LibraryFact[]; sections: LibraryReferenceSection[]; examples: GrammarExample[]; commonMistakes: Array<{ incorrect: string; corrected: string; banglaExplanation: string }>;
+  relatedResourceIds: EntityId[]; relatedConceptIds: EntityId[]; relatedLessonIds: EntityId[]; relatedVocabularyIds: EntityId[];
+  sourceId: EntityId; license: SupportedLicense; licenseUrl?: string; commercialUseAllowed: boolean; attribution: string;
+}
+
+export interface LibraryActivity extends Versioned {
+  userId: EntityId; resourceId: EntityId; viewCount: number; firstViewedAt: string; lastViewedAt: string; lastPosition?: number; lastSectionId?: string; practicedAt?: string;
+}
+
+export interface LibrarySearchHistory extends Versioned { userId: EntityId; query: string; normalizedQuery: string; searchedAt: string; resultCount: number; }
+
+export interface LibraryResourceFilters { categoryId?: EntityId; type?: LibraryResourceType; level?: LevelCode; topic?: string; page?: number; pageSize?: number; }
+export interface LibrarySearchFilters { query: string; type?: LibraryResourceType; level?: LevelCode; page?: number; pageSize?: number; includeVocabulary?: boolean; }
+export interface LibrarySearchHit { id: EntityId; source: "library" | "vocabulary"; title: string; banglaTitle?: string; summary: string; type: LibraryResourceType | "vocabulary"; level: LevelCode; route: string; matchedTerms: string[]; }
+export interface LibrarySearchResult { hits: LibrarySearchHit[]; groups: Array<{ type: LibrarySearchHit["type"]; items: LibrarySearchHit[] }>; page: number; pageSize: number; total: number; hasMore: boolean; }
 
 /** The skill labs share one activity contract while preserving each skill's own payload shape. */
 export type LabSkill = "listening" | "pronunciation" | "speaking" | "reading" | "writing" | "communication";

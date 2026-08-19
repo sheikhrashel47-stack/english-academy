@@ -1,7 +1,7 @@
 import { AppError } from "@/core/errors/AppError";
 
 export const DB_NAME = "english-academy";
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export const stores = {
   courses: "courses", levels: "levels", units: "units", chapters: "chapters", lessons: "lessons", vocabulary: "vocabulary", questions: "questions",
@@ -11,6 +11,7 @@ export const stores = {
   skillActivities: "skillActivities", skillSources: "skillSources", phrases: "phrases", skillAttempts: "skillAttempts", skillErrors: "skillErrors", skillMastery: "skillMastery",
   assessmentSources: "assessmentSources", assessmentQuestions: "assessmentQuestions", assessmentBlueprints: "assessmentBlueprints", assessmentSessions: "assessmentSessions", assessmentAnswers: "assessmentAnswers", assessmentResults: "assessmentResults", educationalCertificates: "educationalCertificates",
   personalProfiles: "personalProfiles", learningGoals: "learningGoals", personalLearningEvents: "personalLearningEvents", xpLedger: "xpLedger", studyDays: "studyDays", achievementDefinitions: "achievementDefinitions", achievementProgress: "achievementProgress", dailyStudyPlans: "dailyStudyPlans",
+  librarySources: "librarySources", libraryCategories: "libraryCategories", libraryResources: "libraryResources", libraryActivities: "libraryActivities", librarySearchHistory: "librarySearchHistory",
 } as const;
 
 export type StoreName = (typeof stores)[keyof typeof stores];
@@ -55,7 +56,7 @@ class EnglishAcademyDb {
     const mistakeStore = create(stores.mistakes); index(mistakeStore, "userQuestion", ["userId", "questionId"]);
     const reviewStore = create(stores.reviewItems); index(reviewStore, "due", "nextReviewAt");
     const objectiveStore = create(stores.objectives); index(objectiveStore, "userObjective", ["userId", "lessonId", "objective"], true);
-    const bookmarkStore = create(stores.bookmarks); index(bookmarkStore, "userContent", ["userId", "contentId"], true);
+    const bookmarkStore = create(stores.bookmarks); index(bookmarkStore, "userContent", ["userId", "contentId"], true); index(bookmarkStore, "userType", ["userId", "contentType"]);
     const noteStore = create(stores.notes); index(noteStore, "userContent", ["userId", "contentId"], true);
     const sessionStore = create(stores.sessions); index(sessionStore, "userStarted", ["userId", "startedAt"]);
     create(stores.settings);
@@ -81,6 +82,11 @@ class EnglishAcademyDb {
     const achievementDefinitionStore = create(stores.achievementDefinitions); index(achievementDefinitionStore, "code", "code", true); index(achievementDefinitionStore, "criterion", "criterion");
     const achievementProgressStore = create(stores.achievementProgress); index(achievementProgressStore, "userAchievement", ["userId", "achievementId"], true); index(achievementProgressStore, "userAchievementStatus", ["userId", "achievementStatus"]);
     const studyPlanStore = create(stores.dailyStudyPlans); index(studyPlanStore, "userDate", ["userId", "date"], true);
+    const librarySourceStore = create(stores.librarySources); index(librarySourceStore, "license", "license");
+    const libraryCategoryStore = create(stores.libraryCategories); index(libraryCategoryStore, "slug", "slug", true); index(libraryCategoryStore, "order", "order");
+    const libraryResourceStore = create(stores.libraryResources); index(libraryResourceStore, "categoryId", "categoryId"); index(libraryResourceStore, "type", "type"); index(libraryResourceStore, "level", "level"); index(libraryResourceStore, "categoryType", ["categoryId", "type"]); index(libraryResourceStore, "typeLevel", ["type", "level"]); index(libraryResourceStore, "searchTerms", "searchTerms", false);
+    const libraryActivityStore = create(stores.libraryActivities); index(libraryActivityStore, "userResource", ["userId", "resourceId"], true); index(libraryActivityStore, "userViewed", ["userId", "lastViewedAt"]);
+    const libraryHistoryStore = create(stores.librarySearchHistory); index(libraryHistoryStore, "userSearched", ["userId", "searchedAt"]); index(libraryHistoryStore, "userNormalizedQuery", ["userId", "normalizedQuery"]);
   }
 
   async get<T>(store: StoreName, key: IDBValidKey): Promise<T | undefined> { return this.run<T | undefined>(store, "readonly", (objectStore) => objectStore.get(key)); }

@@ -1,19 +1,20 @@
 import { AppError } from "@/core/errors/AppError";
 import { logger } from "@/core/services/logger";
 import { importLearningSeed } from "@/data/content/ContentImporter";
-import { validateGrammarConcepts, validateSentenceLicense, validateVocabularyLicense } from "@/data/content/ContentValidator";
+import { validateGrammarConcepts, validateLibraryRecords, validateSentenceLicense, validateVocabularyLicense } from "@/data/content/ContentValidator";
 import { importVocabularyPackage, type VocabularyImportReport } from "@/data/content/VocabularyImporter";
 import { phase2Seed } from "@/data/content/phase2Seed";
 import { originalSampleSource, phase3GrammarConcepts, phase3PracticeQuestions, phase3Vocabulary } from "@/data/content/phase3Seed";
 import { phase4Phrases, phase4SkillActivities, phase4SkillSources } from "@/data/content/phase4SkillSeed";
 import { phase6AssessmentBlueprints, phase6AssessmentQuestions, phase6AssessmentSources } from "@/data/content/phase6AssessmentSeed";
 import { phase7AchievementDefinitions } from "@/data/content/phase7PersonalSeed";
+import { phase8LibrarySeed } from "@/data/content/phase8LibrarySeed";
 import { productionCorpusManifest, type ProductionCorpusAudit } from "@/data/content/productionCorpus";
 import { englishAcademyDb, stores } from "@/data/indexeddb/EnglishAcademyDb";
 import { isUnlocked, scoreForAttempts, type CompletionState } from "@/domain/learning/progressionEngine";
 import { getCorrectAnswer, validateAnswer } from "@/domain/practice/exerciseEngine";
 import { IntervalReviewScheduler, VocabularySrsScheduler } from "@/domain/review/ReviewScheduler";
-import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
+import type { AppSettings, AssessmentBlueprint, AssessmentQuestion, AssessmentType, Attempt, Bookmark, Chapter, DiagnosticResult, EducationalCertificate, FlashcardRating, GrammarConcept, GrammarConceptFilters, GrammarTopic, LabSkill, Lesson, LearningSeed, LearningSession, LibraryActivity, LibraryCategory, LibraryResource, LibraryResourceFilters, LibrarySearchFilters, LibrarySearchHistory, LibrarySearchHit, LibrarySearchResult, MistakeRecord, ObjectiveProgress, PersonalNote, PersonalStudyPath, Phrase, Question, ReviewItem, SRSCard, Skill, SkillActivity, SkillActivityFilters, SkillAttempt, SkillConfidence, SkillError, SkillMastery, SkillMasteryState, Unit, UserActivityProgress, UserLessonProgress, UserVocabularyProgress, VocabularyItem, VocabularySearchFilters, VocabularySearchResult, VocabularySentence, VocabularySource, WritingDraft } from "@/domain/learning/types";
 import type { AssessmentAnswer, AssessmentResult, AssessmentSession } from "@/domain/learning/types";
 import type { AchievementDefinition, AchievementProgress, DailyStudyPlan, LearningGoal, PersonalLearningEvent, PersonalLearningProfile, StudyDayRecord, XpLedgerEntry } from "@/domain/learning/types";
 import { createPrivacySafeVerificationPayload, deriveCompletionBadges, isFullyScoredCompletion, type CompletionBadge } from "@/domain/learning/certificateEngine";
@@ -21,7 +22,7 @@ import { academyLevelFor, buildDailyStudyPlan, calculateEventXp, localStudyDate,
 
 const learnerId = "local-learner";
 const settingsId = "app-settings";
-const seedVersion = "phase7.personal-learning.1";
+const seedVersion = "phase8.library.1";
 const timestamp = () => new Date().toISOString();
 const corpusChunkSize = 500;
 const alphabetLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -29,6 +30,7 @@ const letterRange = (letter: string) => {
   const normalized = letter.trim().slice(0, 1).toLocaleLowerCase("en-US");
   return normalized ? IDBKeyRange.bound(normalized, `${normalized}\uffff`) : undefined;
 };
+const normalizeSearchTerms = (value: string) => value.toLocaleLowerCase("en-US").normalize("NFKC").replace(/[.,;:!?()[\]{}"'“”‘’/\\|+*=<>—–-]+/g, " ").split(/\s+/).filter((token) => token.length > 0).slice(0, 4);
 
 type ProductionCorpusPackage = { sources: VocabularySource[]; vocabulary: VocabularyItem[]; sentences: VocabularySentence[]; audit: ProductionCorpusAudit };
 
@@ -74,6 +76,7 @@ class LearningRepository {
       await this.persistPhase3Seed();
       await this.persistSkillSeed();
       await this.persistAssessmentSeed();
+      await this.persistLibrarySeed();
       await this.persistPersonalLearningSeed();
       await this.ensurePersonalLearningProfile();
       await englishAcademyDb.put(stores.settings, { ...defaultSettings(), ...(settings ?? {}), id: settingsId, seedVersion, updatedAt: timestamp() });
@@ -121,6 +124,15 @@ class LearningRepository {
       englishAcademyDb.putMany(stores.assessmentSources, phase6AssessmentSources),
       englishAcademyDb.putMany(stores.assessmentQuestions, phase6AssessmentQuestions),
       englishAcademyDb.putMany(stores.assessmentBlueprints, phase6AssessmentBlueprints),
+    ]);
+  }
+
+  private async persistLibrarySeed(): Promise<void> {
+    validateLibraryRecords(phase8LibrarySeed.source, phase8LibrarySeed.categories, phase8LibrarySeed.resources);
+    await Promise.all([
+      englishAcademyDb.put(stores.librarySources, phase8LibrarySeed.source),
+      englishAcademyDb.putMany(stores.libraryCategories, phase8LibrarySeed.categories),
+      englishAcademyDb.putMany(stores.libraryResources, phase8LibrarySeed.resources),
     ]);
   }
 
@@ -472,6 +484,89 @@ class LearningRepository {
     await this.seedIfNeeded();
     const result = await englishAcademyDb.getPage<VocabularySentence>(stores.sentences, { index: "vocabularyId", query: vocabularyId, offset: Math.max(0, page) * pageSize, limit: Math.min(12, Math.max(3, pageSize)) });
     return { sentences: result.items, page, pageSize, total: result.total, hasMore: (page + 1) * pageSize < result.total };
+  }
+
+  async getLibraryCategories(): Promise<LibraryCategory[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    return (await englishAcademyDb.getAll<LibraryCategory>(stores.libraryCategories)).sort((a, b) => a.order - b.order);
+  }
+
+  private async libraryCandidates(filters: Pick<LibraryResourceFilters, "categoryId" | "type" | "level">): Promise<LibraryResource[]> {
+    let records: LibraryResource[];
+    if (filters.categoryId && filters.type) records = await englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "categoryType", [filters.categoryId, filters.type]);
+    else if (filters.type && filters.level) records = await englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "typeLevel", [filters.type, filters.level]);
+    else if (filters.categoryId) records = await englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "categoryId", filters.categoryId);
+    else if (filters.type) records = await englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "type", filters.type);
+    else if (filters.level) records = await englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "level", filters.level);
+    else {
+      const categories = await this.getLibraryCategories();
+      const categoryGroups = await Promise.all(categories.map((category) => englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "categoryId", category.id)));
+      records = categoryGroups.reduce<LibraryResource[]>((all, group) => all.concat(group), []);
+    }
+    return records.filter((item) => (!filters.level || item.level === filters.level) && (!filters.type || item.type === filters.type)).sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  async getLibraryResources(filters: LibraryResourceFilters = {}) {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const page = Math.max(0, filters.page ?? 0); const pageSize = Math.min(48, Math.max(6, filters.pageSize ?? 18)); const records = await this.libraryCandidates(filters); const start = page * pageSize;
+    return { items: records.slice(start, start + pageSize), page, pageSize, total: records.length, hasMore: start + pageSize < records.length };
+  }
+
+  async getLibraryResource(resourceId: string): Promise<LibraryResource | undefined> { await this.seedIfNeeded({ waitForCorpus: false }); return englishAcademyDb.get<LibraryResource>(stores.libraryResources, resourceId); }
+
+  async getLibraryResourceState(resourceId: string): Promise<{ saved: boolean; activity?: LibraryActivity; note?: PersonalNote }> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const [bookmark, activity, note] = await Promise.all([
+      englishAcademyDb.getByIndex<Bookmark>(stores.bookmarks, "userContent", [learnerId, resourceId]),
+      englishAcademyDb.getByIndex<LibraryActivity>(stores.libraryActivities, "userResource", [learnerId, resourceId]),
+      englishAcademyDb.getByIndex<PersonalNote>(stores.notes, "userContent", [learnerId, resourceId]),
+    ]);
+    return { saved: bookmark.some((item) => item.contentType === "library"), activity: activity[0], note: note[0] };
+  }
+
+  async recordLibraryResourceView(resourceId: string, patch: Pick<LibraryActivity, "lastPosition" | "lastSectionId" | "practicedAt"> = {}): Promise<LibraryActivity> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const resource = await englishAcademyDb.get<LibraryResource>(stores.libraryResources, resourceId);
+    if (!resource) throw new AppError("ContentError", "Library resource-টি খুঁজে পাওয়া যায়নি। ");
+    const current = (await englishAcademyDb.getByIndex<LibraryActivity>(stores.libraryActivities, "userResource", [learnerId, resourceId]))[0]; const now = timestamp();
+    const activity: LibraryActivity = { id: current?.id ?? `library-activity-${learnerId}-${resourceId}`, schemaVersion: 10, updatedAt: now, userId: learnerId, resourceId, viewCount: (current?.viewCount ?? 0) + 1, firstViewedAt: current?.firstViewedAt ?? now, lastViewedAt: now, lastPosition: patch.lastPosition ?? current?.lastPosition, lastSectionId: patch.lastSectionId ?? current?.lastSectionId, practicedAt: patch.practicedAt ?? current?.practicedAt };
+    await englishAcademyDb.put(stores.libraryActivities, activity); return activity;
+  }
+
+  async getLibrarySavedResources(): Promise<LibraryResource[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const bookmarks = await englishAcademyDb.getByIndex<Bookmark>(stores.bookmarks, "userType", [learnerId, "library"]);
+    const records = await Promise.all(bookmarks.map((bookmark) => englishAcademyDb.get<LibraryResource>(stores.libraryResources, bookmark.contentId)));
+    return records.filter((item): item is LibraryResource => Boolean(item)).sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  async getRecentLibraryResources(limit = 4): Promise<Array<{ resource: LibraryResource; activity: LibraryActivity }>> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const activities = await englishAcademyDb.getPage<LibraryActivity>(stores.libraryActivities, { index: "userViewed", query: IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"]), limit: Math.max(1, Math.min(8, limit)), direction: "prev" });
+    const records = await Promise.all(activities.items.map(async (activity) => ({ activity, resource: await englishAcademyDb.get<LibraryResource>(stores.libraryResources, activity.resourceId) })));
+    return records.filter((item): item is { resource: LibraryResource; activity: LibraryActivity } => Boolean(item.resource));
+  }
+
+  async getLibrarySearchHistory(limit = 8): Promise<LibrarySearchHistory[]> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const records = await englishAcademyDb.getByIndexRange<LibrarySearchHistory>(stores.librarySearchHistory, "userSearched", IDBKeyRange.bound([learnerId, ""], [learnerId, "\uffff"])); const seen = new Set<string>();
+    return records.sort((a, b) => b.searchedAt.localeCompare(a.searchedAt)).filter((item) => !seen.has(item.normalizedQuery) && Boolean(seen.add(item.normalizedQuery))).slice(0, Math.max(1, limit));
+  }
+
+  async searchLibrary(filters: LibrarySearchFilters): Promise<LibrarySearchResult> {
+    await this.seedIfNeeded({ waitForCorpus: false });
+    const tokens = normalizeSearchTerms(filters.query); const page = Math.max(0, filters.page ?? 0); const pageSize = Math.min(40, Math.max(6, filters.pageSize ?? 18));
+    if (!tokens.length) return { hits: [], groups: [], page, pageSize, total: 0, hasMore: false };
+    const resourceGroups = await Promise.all(tokens.map((token) => englishAcademyDb.getByIndex<LibraryResource>(stores.libraryResources, "searchTerms", token)));
+    const first = resourceGroups[0] ?? []; const matchedResources = first.filter((item) => resourceGroups.every((group) => group.some((candidate) => candidate.id === item.id))).filter((item) => (!filters.type || item.type === filters.type) && (!filters.level || item.level === filters.level));
+    const normalizedQuery = tokens.join(" ");
+    const libraryHits: LibrarySearchHit[] = matchedResources.map((item) => ({ id: item.id, source: "library", title: item.title, banglaTitle: item.banglaTitle, summary: item.summary, type: item.type, level: item.level, route: `/library/${item.id}`, matchedTerms: tokens }));
+    const startsEnglish = /^[a-z]/i.test(tokens[0]);
+    const initial = tokens[0].slice(0, 1); const vocabularyHits: LibrarySearchHit[] = filters.includeVocabulary === false || !startsEnglish ? [] : (await englishAcademyDb.getByIndexRange<VocabularyItem>(stores.vocabulary, "lemma", IDBKeyRange.bound(initial, `${initial}\uffff`))).filter((item) => [item.word, item.lemma, item.meaning].some((value) => value?.toLocaleLowerCase("en-US").includes(normalizedQuery)) && (!filters.level || item.level === filters.level)).slice(0, 10).map((item) => ({ id: item.id, source: "vocabulary", title: item.word, banglaTitle: item.meaning, summary: `${item.partOfSpeech} · ${item.topic}`, type: "vocabulary", level: item.level, route: `/vocabulary/${encodeURIComponent(item.word)}`, matchedTerms: tokens }));
+    const ranked = [...libraryHits, ...vocabularyHits].sort((a, b) => (Number(b.title.toLocaleLowerCase("en-US").startsWith(normalizedQuery)) - Number(a.title.toLocaleLowerCase("en-US").startsWith(normalizedQuery))) || a.title.localeCompare(b.title));
+    const start = page * pageSize; const hits = ranked.slice(start, start + pageSize); const types = Array.from(new Set(hits.map((hit) => hit.type))); const groups = types.map((type) => ({ type, items: hits.filter((hit) => hit.type === type) }));
+    const now = timestamp(); await englishAcademyDb.put(stores.librarySearchHistory, { id: `library-search-${crypto.randomUUID()}`, schemaVersion: 10, updatedAt: now, userId: learnerId, query: filters.query.trim(), normalizedQuery, searchedAt: now, resultCount: ranked.length });
+    return { hits, groups, page, pageSize, total: ranked.length, hasMore: start + pageSize < ranked.length };
   }
 
   async saveDiagnosticResult(result: DiagnosticResult): Promise<PersonalStudyPath> {

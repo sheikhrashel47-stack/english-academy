@@ -138,16 +138,18 @@
 
 ## Phase 8 complete English library, reference center and resource system
 
-- [ ] Phase 8 specification, existing offline course/content architecture এবং explicit no-AI boundary reconcile করা।
-- [ ] Versioned library reference, category, source-license, import, bookmark, note, history ও search contracts; IndexedDB migration তৈরি করা।
-- [ ] Original or attribution-ready sample grammar, vocabulary usage, phrase, pronunciation, writing, reading ও listening-reference catalogue তৈরি করা।
-- [ ] Indexed offline search, grouped results, efficient indexed/paginated query path, local search history ও import validation তৈরি করা।
-- [ ] Library Hub, category navigation, quick-reference cards, grammar/tense/preposition/verb/IPA and pronunciation references তৈরি করা।
-- [ ] Phrasal verb, idiom, collocation, common error, confusing word, word-family, synonym/antonym, sentence-pattern ও useful-phrase library তৈরি করা।
-- [ ] Writing, reading, listening, communication ও English-usage resource surfaces তৈরি করা।
-- [ ] Local bookmarks, notes, recently viewed, continue-reading ও rule-based recommendation integration তৈরি করা।
-- [ ] Accessibility, mobile/offline UX, source-license diagnostics, tests, performance, production build ও GitHub Pages release যাচাই করা।
-- [ ] Phase 8 supported workflows, sample-data boundary, limitations ও release result নথিবদ্ধ করে final delivery সম্পন্ন করা।
+- [x] Phase 8 execution শুরু: specification-led domain, library information architecture ও offline resource boundaries establish করা।
+- [x] Phase 8 specification, existing offline course/content architecture এবং explicit no-AI boundary reconcile করা।
+- [x] Versioned library reference, category, source-license, import, bookmark, note, history ও search contracts; IndexedDB migration তৈরি করা।
+- [x] Original or attribution-ready sample grammar, vocabulary usage, phrase, pronunciation, writing, reading ও listening-reference catalogue তৈরি করা।
+- [x] Indexed offline search, grouped results, efficient indexed/paginated query path, local search history ও import validation তৈরি করা।
+- [x] Library Hub, category navigation, quick-reference cards, grammar/tense/preposition/verb/IPA and pronunciation references তৈরি করা।
+- [x] Phrasal verb, idiom, collocation, common error, confusing word, word-family, synonym/antonym, sentence-pattern ও useful-phrase library তৈরি করা।
+- [x] Writing, reading, listening, communication ও English-usage resource surfaces তৈরি করা।
+- [x] Local bookmarks, notes, recently viewed, continue-reading ও rule-based recommendation integration তৈরি করা।
+- [x] Accessibility, mobile/offline UX, source-license diagnostics, tests, performance ও production build যাচাই করা।
+- [x] Phase 8 supported workflows, sample-data boundary ও limitations নথিবদ্ধ করা।
+- [ ] Authenticated GitHub Pages release চালিয়ে Phase 8 public Library routes যাচাই করা।
 
 ## Phase 7 personal learning, gamification and motivation engine — priority before Phase 8
 

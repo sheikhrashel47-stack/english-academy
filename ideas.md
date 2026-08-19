@@ -89,3 +89,6 @@ Retain a distinct book-and-compass mark only if it is refined in Academy Emerald
 - **Branded non-content states:** Loading and empty states keep the English Academy workspace identity, an English learning-purpose headline, supportive Bangla guidance, one factual local-status cue and a safe next action where one exists.
 - **Personal Growth ledger:** The Growth workspace leads with a connected Pre-A1–C2 CEFR study ribbon and local learning evidence; XP is a supporting accounting signal, never the emotional center.
 - **Personal Growth voice:** Use study rhythm, recorded milestone, learning evidence and next step; trophy, unlock and reward-led language is excluded from the primary hierarchy.
+- **Library reference ledger:** Every Library card visibly carries an Academy Emerald focus edge plus factual CEFR, study-time and local-provenance evidence before secondary actions.
+- **Library primary action:** Each Library surface states one safe next learning task before filters or browsing controls: search a question, open a reference, save a note or return to the catalogue.
+- **Library reference hierarchy:** English names the reference object first; Bangla explains the learning purpose immediately beneath it. Library and saved surfaces carry a visible CEFR/reference-ledger or provenance register motif.

@@ -52,6 +52,7 @@ const navigationGroups: NavigationGroup[] = [
     label: "Skills & Review",
     items: [
       { href: "/vocabulary", label: "Vocabulary", icon: BookOpen },
+      { href: "/library", label: "English Library", icon: LibraryBig },
       { href: "/grammar", label: "Grammar", icon: BookMarked },
       { href: "/listening", label: "Listening", icon: Ear },
       { href: "/audio", label: "Offline audio", icon: Ear },
@@ -85,6 +86,7 @@ const quickDestinations = [
   { href: "/learn", label: "Study plan", hint: "Course, level and unit" },
   { href: "/practice/setup", label: "Practice setup", hint: "Questions and filters" },
   { href: "/vocabulary", label: "Vocabulary library", hint: "Word search and pronunciation" },
+  { href: "/library", label: "English Library", hint: "Offline bilingual reference notes" },
   { href: "/vocabulary/flashcards", label: "Flashcards", hint: "Local spaced review" },
   { href: "/grammar", label: "Grammar", hint: "Topics and examples" },
   { href: "/listening", label: "Listening Lab", hint: "Browser voice sample" },
@@ -120,9 +122,9 @@ export function AppShell({ children, title, eyebrow }: AppShellProps) {
       <Link href="/dashboard" className="brand-lockup" onClick={() => setOpen(false)}>
         <img src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663892230510/HDBugHwgvZZHpDdM.png" alt="English Academy" className="brand-mark" />
         <span className="brand-type">
-          <strong>English Academy</strong>
+          <strong className="brand-wordmark"><i>English</i> Academy</strong>
           <em>ইংরেজি শেখার প্রতিষ্ঠান</em>
-          <small>CEFR STUDY HOUSE</small>
+          <small><b>CEFR</b> STUDY HOUSE</small>
         </span>
       </Link>
 
